@@ -8,20 +8,39 @@ The primary goal of this system is to automate the prediction of NOAEL values ba
 
 ## 2. Architectural Pivot: From TxGemma to Traditional ML
 
-This project initially employed the TxGemma Large Language Model (`google/txgemma-2b-predict`) with the hypothesis that it could infer the NOAEL from a text-based summary of the study findings. The workflow involved:
+This project initially employed the TxGemma Large Language Model (`google/txgemma-2b-predict`) with the hypothesis that it could infer the NOAEL from a text-based summary of the study findings. The initial workflow involved:
 
 1.  Parsing SEND domains (DM, EX, LB, TS).
 2.  Generating a structured text prompt summarizing demographics, exposure, key lab findings (e.g., changes in ALT, AST), and study design.
 3.  Sending this prompt to the TxGemma model via the `transformers` library.
 4.  Attempting to parse a predicted NOAEL value (numerical value and units) from the model's free-text response.
 
-**Challenges and Rationale for Pivot:**
+**Detailed Challenges and Rationale for Pivot:**
 
-*   **Inconsistent Output:** The TxGemma model frequently failed to return a parsable numerical NOAEL value, often outputting single letters, SMILES strings (in sanity checks), or generic text unrelated to the quantitative task.
-*   **Model Suitability:** Further investigation into the TxGemma model's documentation and examples revealed its primary focus on text generation, classification, and information extraction related to clinical trial text, rather than direct quantitative regression from structured or semi-structured data summaries.
-*   **Prompt Engineering Complexity:** Reliably prompting the LLM to perform the desired quantitative prediction proved difficult and sensitive to minor variations in the input summary.
+The attempt to use TxGemma for direct NOAEL prediction encountered significant hurdles:
 
-Consequently, the architecture was pivoted to a more conventional and reliable approach using **supervised machine learning**, where explicit numerical features are engineered from the SEND data to train a model (like XGBoost) specifically for the regression task of predicting the NOAEL value.
+*   **Task Mismatch (Text Generation vs. Quantitative Regression):** The fundamental issue was using a model optimized for natural language understanding and generation for a quantitative regression task. `txgemma-2b-predict`, while knowledgeable in the biomedical domain, is not inherently designed to perform precise numerical calculations or regressions based on summarized text inputs. Its primary function is text prediction and generation.
+*   **Inconsistent and Unparsable Output:** The model rarely produced the desired output format (e.g., a specific number and unit like "50 mg/kg/day"). Instead, outputs were often:
+    *   **Non-numerical:** Single letters (e.g., "A"), generic text fragments.
+    *   **Irrelevant but Contextual:** SMILES strings during sanity checks (indicating some context understanding but not task execution).
+    *   **Unstructured:** Free text that might mention study details but lacked a clearly identifiable or parsable NOAEL value.
+    This inconsistency made reliable extraction of a numerical result impossible, leading to frequent "Parsing Failed" states.
+*   **Input Representation Difficulty:** Translating structured, tabular SEND data into a textual summary for the LLM loses some numerical precision and relational information inherent in the original tables. Asking the LLM to reason quantitatively based on this secondary textual representation is less direct and potentially more error-prone than using the structured data directly.
+*   **Prompt Engineering Complexity:** LLM outputs are highly sensitive to input prompts. Crafting a prompt that could reliably instruct the model to not only understand the summarized study but also perform the specific calculation and return it in the desired format proved extremely difficult and likely would have required extensive experimentation.
+*   **Lack of Specific Fine-Tuning:** The base `txgemma-2b-predict` model, while pre-trained on a vast corpus, was not specifically fine-tuned for the task of NOAEL prediction from SEND data summaries. Achieving reliable performance on specialized tasks like quantitative prediction often necessitates fine-tuning on a targeted dataset with examples of the desired input-output behavior.
+
+Consequently, the architecture was pivoted to a more conventional and reliable approach using **supervised machine learning**. This allows explicit numerical and categorical features engineered directly from the structured SEND data to be fed into a model (like XGBoost) specifically designed and trained for the regression task of predicting the numerical NOAEL value.
+
+**Potential LLM Approaches (Alternative Considerations):**
+
+While we pivoted away, making an LLM viable for this task *might* involve:
+
+1.  **Fine-Tuning:** Training a base LLM (like TxGemma or others) on a large dataset of (SEND Summary, NOAEL Value) pairs. This would teach the model the specific task and desired output format.
+2.  **Structured Output Prompting:** Using advanced prompting techniques that strongly guide the model to generate output in a specific format (e.g., JSON), although this can still be unreliable for base models not explicitly trained for structured output.
+3.  **LLM as Feature Enhancer:** Using the LLM to generate *textual summaries* or *risk assessments* based on the data, which could then be used as *additional features* alongside the numerical data fed into a traditional ML model.
+4.  **LLM Function Calling/Agents:** Designing a system where the LLM analyzes the request and potentially calls external tools or functions (which might include traditional ML models or calculators) to determine the NOAEL, rather than calculating it directly. This often requires more sophisticated LLMs with built-in agentic capabilities.
+
+These approaches involve significant effort in data collection, fine-tuning, or complex system design, reinforcing the decision to utilize a traditional ML approach for its directness and reliability for this specific quantitative prediction goal.
 
 ## 3. Current ML Architecture Components
 
