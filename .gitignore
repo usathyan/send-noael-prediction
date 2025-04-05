@@ -35,4 +35,7 @@ frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
 # Model files (optional - consider if large or should be generated)
-# python/model/saved_models/*.joblib 
+# python/model/saved_models/*.joblib
+
+# External Data (if not managed as submodule)
+data/external/ 
