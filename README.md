@@ -1,5 +1,16 @@
 # SEND NOAEL Prediction API (Traditional ML)
 
+# My Notes
+
+This project was insipred by a Hackathon, to predict NOAEL from SEND datasets. 
+I took it as an opportunity to see if we can completely develop this using AI tools available. 
+
+Here is How I did this:
+1. [Manus](https://manus.im/share/CDv3aokpoeyRxSpYVeDa7V?replay=1), helped me with creating a plan. See [details](docs/manus/comprehensive_report.md). There are more documents in the docs/manus folder.
+2. I then fed the entire documents to [Cursor](https://www.cursor.com/) to develop it.
+3. After several iterations, and tweaks, and some handholding, here is the result: It is a working version, and [screenshots](docs/screenshots.md).
+4. Also take a look at [Architecture](Architecture.md), which provides details on why TxGemma did not work.
+
 This project provides a FastAPI backend to predict the No Observed Adverse Effect Level (NOAEL) from preclinical toxicology studies submitted in the Standard for Exchange of Nonclinical Data (SEND) format, using a traditional Machine Learning (ML) model.
 
 ## Overview
