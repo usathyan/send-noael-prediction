@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+virtualenv/
+venv/
+env/
+*.env
+
+# IDE / OS specific
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Secrets (if used)
+.env*
+!*.env.example
+
+# Frontend Build/Dependencies (adjust path if frontend is not named 'frontend')
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.pnp*
+frontend/.yarn/cache
+frontend/.yarn/unplugged
+frontend/.yarn/build-state.yml
+frontend/.yarn/install-state.gz
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Model files (optional - consider if large or should be generated)
+# python/model/saved_models/*.joblib 
