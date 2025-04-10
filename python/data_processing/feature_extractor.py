@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List
 import logging
 
 # Import necessary ML preprocessing tools
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
 
 logging.basicConfig(
@@ -61,12 +61,14 @@ def _summarize_findings(findings: Dict[str, pd.DataFrame], exposure: Optional[pd
                          mean_vals = highest_dose_df.groupby('LBTESTCD')['LBSTRESN_num'].mean().dropna()
                          if not mean_vals.empty:
                               summary_lines.append(f"  - Mean results at highest dose ({highest_dose} {exp_subset['EXDOSU'].iloc[0]}):")
+                              # Extract top N findings
                               for test, mean_val in mean_vals.head(10).items(): # Limit output
-                                   summary_lines.append(f"    - {test}: {mean_val:.2f}")
-                              if len(mean_vals) > 10: summary_lines.append("      ...")
+                                  summary_lines.append(f"    - {test}: {mean_val:.2f}")
+                              if len(mean_vals) > 10:
+                                  summary_lines.append("      ...")
             
         except Exception as e:
-            logger.warning(f"Could not perform basic LB summary merge/analysis: {e}")
+            logger.warning(f"Could not summarize LB findings: {e}")
             summary_lines.append("  - Could not generate detailed LB summary.")
     
     # Similar summaries could be added for CL, BW, MI etc.

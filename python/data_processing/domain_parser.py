@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,7 +50,7 @@ def parse_exposure(ex_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     available_cols.extend([col for col in optional_cols if col in ex_df.columns])
 
     if 'USUBJID' not in available_cols or 'EXDOSE' not in available_cols:
-        logging.warning(f"EX domain missing essential columns (USUBJID, EXDOSE). Cannot parse exposure.")
+        logging.warning("EX domain missing essential columns (USUBJID, EXDOSE). Cannot parse exposure.")
         return None
 
     exposure = ex_df[available_cols].copy()

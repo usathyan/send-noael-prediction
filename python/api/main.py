@@ -1,8 +1,7 @@
 import logging
-import tempfile
 import zipfile
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Path as FastApiPath
 from pydantic import BaseModel, Field
@@ -22,6 +21,8 @@ from python.data_processing.feature_extractor import extract_features
 # from python.model.confidence_scorer import generate_confidence_score
 # Import the new ML predictor
 from python.model.ml_predictor import load_pretrained_model, predict_noael_ml
+# Import the TxGemma NOAEL demo function
+from python.txgemma_demos.noael_demo import run_noael_determination_demo
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +82,21 @@ class PredictionResponseML(BaseModel):
     noael_result: NoaelResultML
     # Confidence scores might need separate calculation or model property
     confidence: Optional[float] = Field(default=None, example=0.85) 
+    error: Optional[str] = None
+
+class DemoNoaelResult(BaseModel): # Can be nested or kept separate
+    overall_noael: Optional[float] = Field(None, description="Overall NOAEL determined by stats analysis (most sensitive endpoint)")
+    dose_units: str
+    analysis_summary: Optional[Dict] = Field(None, description="Summary of statistical analysis results") # Placeholder
+    per_endpoint_noael: Optional[Dict] = Field(None, description="NOAEL/LOAEL determined per endpoint") # Placeholder
+    summary_prompt: Optional[str] = Field(None, description="Generated text prompt summarizing findings for LLM")
+    simulated_response: Optional[str] = Field(None, description="Simulated textual response based on analysis")
+
+class DemoResponse(BaseModel):
+    study_id: str
+    demo_name: str
+    results: Optional[DemoNoaelResult] = None # Using specific model
+    raw_results: Optional[Dict] = Field(None, description="Full raw output dictionary from the demo function") # For debugging
     error: Optional[str] = None
 
 # --- Helper Functions ---
@@ -218,6 +234,86 @@ async def run_noael_prediction_ml(study_id: str = FastApiPath(..., description="
         logging.error(f"Error during prediction pipeline for study {study_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error during prediction: {e}")
 
+@app.post("/predict/{study_id}/txgemma_demos/noael_determination", response_model=DemoResponse, tags=["TxGemma Demos"])
+async def run_txgemma_noael_demo(
+    study_id: str = FastApiPath(..., description="The ID (directory name) of the uploaded study")
+):
+    """Runs the TxGemma NOAEL Determination Demo.
+
+    This demo performs statistical analysis on study endpoints (LB, BW) 
+    to determine per-endpoint NOAELs and an overall NOAEL based on the most sensitive finding.
+    It then generates a text summary and simulates a potential LLM response based on this analysis.
+    **Note:** The final response is *simulated* and does not involve a live LLM call.
+    """
+    study_path = get_study_path(study_id)
+    if not study_path.is_dir():
+        raise HTTPException(status_code=404, detail=f"Study ID '{study_id}' not found.")
+
+    try:
+        logging.info(f"--- Starting TxGemma NOAEL Demo for Study: {study_id} --- ")
+
+        # 1. Load Data (Reusing existing functions)
+        logging.info("Step 1: Loading SEND domains...")
+        loaded_data = load_send_study(study_path)
+        if not loaded_data:
+            raise HTTPException(status_code=400, detail="Failed to load SEND domains.")
+
+        # 2. Validate Data (Reusing existing functions)
+        logging.info("Step 2: Validating loaded domains...")
+        if not validate_send_domains(loaded_data):
+            raise HTTPException(status_code=400, detail="SEND domain validation failed.")
+
+        # 3. Parse Data (Reusing existing functions)
+        logging.info("Step 3: Parsing domain data...")
+        parsed_data = parse_study_data(loaded_data)
+
+        # 4. Run the Demo Logic
+        logging.info("Step 4: Running NOAEL determination demo logic...")
+        demo_results = run_noael_determination_demo(parsed_data)
+
+        logging.info(f"--- TxGemma NOAEL Demo Finished for Study: {study_id} --- ")
+        
+        if demo_results.get("error"):
+            # Return error from the demo pipeline itself
+             return DemoResponse(
+                study_id=study_id, 
+                demo_name="Automated NOAEL Determination (Simulated)",
+                results=None,
+                raw_results=demo_results, # Include raw results for debugging
+                error=demo_results["error"]
+             )
+
+        # Structure the successful response
+        structured_result = DemoNoaelResult(
+            overall_noael=demo_results.get('overall_noael'),
+            dose_units=demo_results.get('dose_units', 'mg/kg/day'),
+            # Optionally include summaries if needed for UI, keep raw_results for full detail
+            # analysis_summary=demo_results.get('analysis_results'), 
+            # per_endpoint_noael=demo_results.get('per_endpoint_noael'),
+            summary_prompt=demo_results.get('summary_prompt'),
+            simulated_response=demo_results.get('simulated_response')
+        )
+
+        return DemoResponse(
+            study_id=study_id,
+            demo_name="Automated NOAEL Determination (Simulated)",
+            results=structured_result,
+            raw_results=demo_results, # Include raw results for debugging
+            error=None
+        )
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"Error during TxGemma NOAEL demo endpoint for study {study_id}: {e}", exc_info=True)
+        # Return generic error response
+        return DemoResponse(
+            study_id=study_id,
+            demo_name="Automated NOAEL Determination (Simulated)",
+            results=None,
+            error=f"Internal server error during demo execution: {e}"
+        )
+
 # --- Root Endpoint --- #
 @app.get("/")
 async def root():
@@ -226,8 +322,8 @@ async def root():
 # --- Uvicorn Runner (for direct execution) ---
 if __name__ == "__main__":
     print("Starting Uvicorn server for ML prediction API...")
-    print(f"Access the API at http://127.0.0.1:8000")
-    print(f"API Documentation available at http://127.0.0.1:8000/docs")
+    print("Access the API at http://127.0.0.1:8000")
+    print("API Documentation available at http://127.0.0.1:8000/docs")
     # Run using the specific command for consistency:
     # .venv/bin/python -m uvicorn python.api.main:app --reload --host 127.0.0.1 --port 8000
     # Or let uvicorn handle it, assuming environment is activated:

@@ -1,4 +1,3 @@
-import pandas as pd
 import logging
 import re # Import regex module for parsing
 from typing import Optional, Dict, Any, Tuple
