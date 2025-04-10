@@ -190,3 +190,38 @@ After uploading a study (e.g., `Vaccine-Study-1.zip`) via the `/upload/` endpoin
 *   **Frontend:** Develop a user interface (e.g., using Next.js) for easier interaction.
 *   **Configuration:** Make model paths, upload directories, etc., configurable.
 *   **Testing:** Add unit and integration tests. 
+
+# SEND NOAEL Prediction API (TxGemma Demos)
+
+To allow for comparison and exploration of Large Language Model capabilities alongside the primary traditional ML prediction, demonstration scripts based on TxGemma (originally from the `manus/` directory) are being integrated.
+
+**Purpose:** These demos serve as a feasibility check and showcase potential text-based analyses that LLMs like TxGemma can perform on study data, contrasting with the direct quantitative prediction of the ML model.
+
+## Integrated Demo: Automated NOAEL Determination (Simulated)
+
+*   **Module:** `python/txgemma_demos/noael_demo.py`
+*   **Functionality:** This demo analyzes key endpoints (currently Body Weight and Lab Tests) from the parsed study data using statistical tests (ANOVA, t-tests) to identify dose-dependent effects. It determines a NOAEL for each endpoint and an overall NOAEL based on the most sensitive endpoint found via this statistical analysis.
+*   **LLM Simulation:** Crucially, this demo **does not** make a live call to TxGemma for the final summary. Instead, it generates a detailed text prompt summarizing the findings and then uses a template to *simulate* what an ideal LLM response might look like based on the statistical results.
+*   **API Endpoint:** `POST /predict/{study_id}/txgemma_demos/noael_determination`
+
+**Running the Demo:**
+
+1.  Ensure the backend is running (`make run-backend`).
+2.  Upload a study via the `/upload/` endpoint.
+3.  Execute the `POST /predict/{study_id}/txgemma_demos/noael_determination` endpoint using the study ID (e.g., via the `/docs` UI).
+
+**Expected Output (via API):**
+The API returns a JSON response containing:
+*   `overall_noael`: The NOAEL value determined by the statistical analysis (e.g., `0.0` if effects seen at lowest dose, `10.0`, etc.).
+*   `dose_units`: Units for the dose (e.g., `mg/kg/day`).
+*   `summary_prompt`: The detailed text prompt generated based on the analysis.
+*   `simulated_response`: The template-based text simulating an LLM summary.
+*   `raw_results`: The full dictionary containing intermediate steps like endpoint features, statistical results, and per-endpoint NOAELs.
+
+**Frontend Integration (Future Work):**
+*   Add a button/section in the frontend UI (e.g., on the results display page) to trigger this demo endpoint for a selected study.
+*   Display the `simulated_response` text and potentially the statistically derived `overall_noael` from the demo results, clearly distinguishing it from the primary ML prediction.
+
+**Other Demos:**
+Scripts for other demos (Target Organ Prediction, Cross-Study Comparison, etc.) exist in the `manus/` directory but have not yet been integrated into the backend API or frontend UI.
+
