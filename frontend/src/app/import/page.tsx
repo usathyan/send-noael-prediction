@@ -26,6 +26,24 @@ interface PredictionResponse {
   error: string | null;
 }
 
+// Interfaces for the Demo endpoint response
+interface DemoNoaelResult {
+    overall_noael: number | null;
+    dose_units: string;
+    analysis_summary?: Record<string, any>; // Optional, from raw_results if needed
+    per_endpoint_noael?: Record<string, any>; // Optional, from raw_results if needed
+    summary_prompt?: string;
+    simulated_response?: string;
+}
+
+interface DemoResponse {
+    study_id: string;
+    demo_name: string;
+    results?: DemoNoaelResult; 
+    raw_results?: Record<string, any>;
+    error?: string | null;
+}
+
 const ImportPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedStudyId, setUploadedStudyId] = useState<string | null>(null);
@@ -33,6 +51,11 @@ const ImportPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  
+  // State for TxGemma Demo
+  const [demoResult, setDemoResult] = useState<DemoResponse | null>(null);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null); // Separate error for demo
 
   const { dispatch } = useAppContext();
   const router = useRouter();
@@ -43,7 +66,9 @@ const ImportPage: React.FC = () => {
       setSelectedFile(event.target.files[0]);
       setUploadedStudyId(null); // Reset on new file selection
       setPredictionResult(null);
+      setDemoResult(null);
       setError(null);
+      setDemoError(null);
       setUploadMessage(null);
     }
   };
@@ -52,7 +77,9 @@ const ImportPage: React.FC = () => {
     if (!selectedFile) return;
     setIsLoading(true);
     setError(null);
+    setDemoError(null);
     setPredictionResult(null);
+    setDemoResult(null);
     setUploadMessage(null);
 
     const formData = new FormData();
@@ -86,7 +113,9 @@ const ImportPage: React.FC = () => {
     if (!uploadedStudyId) return;
     setIsLoading(true);
     setError(null);
+    setDemoError(null);
     setPredictionResult(null); // Clear previous results
+    setDemoResult(null); // Clear demo results too
 
     try {
       const response = await fetch(`http://127.0.0.1:8000/predict/${uploadedStudyId}`, {
@@ -128,6 +157,43 @@ const ImportPage: React.FC = () => {
     }
   };
 
+  const handleRunDemo = async () => {
+      if (!uploadedStudyId) return;
+      setIsDemoLoading(true);
+      setDemoError(null);
+      setDemoResult(null); // Clear previous demo results
+      
+      try {
+          const response = await fetch(`http://127.0.0.1:8000/predict/${uploadedStudyId}/txgemma_demos/noael_determination`, {
+              method: 'POST',
+          });
+          const data: DemoResponse | { detail: string } = await response.json();
+          
+          if (!response.ok) {
+              const errorDetail = (data as { detail: string }).detail || `Demo failed: ${response.statusText}`;
+              throw new Error(errorDetail);
+          }
+          
+          const successData = data as DemoResponse;
+          setDemoResult(successData);
+          // Check for errors returned within the demo response payload
+          if(successData.error) {
+              setDemoError(successData.error);
+          }
+
+      } catch (err: any) {
+          setDemoError(err.message);
+          // Optionally set a basic demoResult structure indicating failure
+          setDemoResult({
+              study_id: uploadedStudyId,
+              demo_name: "Automated NOAEL Determination (Simulated)",
+              error: err.message
+          });
+      } finally {
+          setIsDemoLoading(false);
+      }
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-semibold mb-4">Import & Predict SEND Study</h1>
@@ -148,40 +214,78 @@ const ImportPage: React.FC = () => {
 
       <button 
         onClick={handleUpload} 
-        disabled={!selectedFile || isLoading}
+        disabled={!selectedFile || isLoading || isDemoLoading}
         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed mr-2"
       >
-        {isLoading && !predictionResult ? 'Uploading...' : 'Upload Study'}
+        {isLoading ? 'Working...' : 'Upload Study'}
       </button>
 
       {uploadedStudyId && (
-        <button 
-          onClick={handlePredict} 
-          disabled={isLoading}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading && predictionResult === null ? 'Predicting...' : `Predict NOAEL for ${uploadedStudyId}`}
-        </button>
+        <>
+          <button 
+            onClick={handlePredict} 
+            disabled={isLoading || isDemoLoading}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed mr-2"
+          >
+            {isLoading ? 'Working...' : `Predict NOAEL (ML) for ${uploadedStudyId}`}
+          </button>
+          
+          <button 
+            onClick={handleRunDemo} 
+            disabled={isLoading || isDemoLoading}
+            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDemoLoading ? 'Running Demo...' : `Run NOAEL Demo (Stats-Based)`}
+          </button>
+        </>
       )}
 
       {/* Display Messages/Errors/Results */}
-      {isLoading && <p className="mt-4 text-gray-600">Loading...</p>}
+      {(isLoading || isDemoLoading) && <p className="mt-4 text-gray-600">Loading...</p>}
       {uploadMessage && <p className="mt-4 text-green-600">{uploadMessage}</p>}
-      {error && <p className="mt-4 text-red-600">Error: {error}</p>}
+      {/* Display general or ML prediction errors */}
+      {error && <p className="mt-4 text-red-600">ML Prediction Error: {error}</p>}
+      {/* Display demo-specific errors */}
+      {demoError && <p className="mt-4 text-orange-600">Demo Error: {demoError}</p>}
       
       {predictionResult && (
         <div className="mt-6 p-4 border rounded shadow-md bg-white">
-          <h3 className="text-lg font-semibold mb-2">Prediction Results for {predictionResult.study_id}</h3>
-          <p><span className="font-medium">Status:</span> {predictionResult.noael_result.status}</p>
-          {predictionResult.error ? (
-              <p className="text-red-600"><span className="font-medium">Details:</span> {predictionResult.error}</p>
+          <h3 className="text-lg font-semibold mb-2">ML Model Prediction for {predictionResult.study_id}</h3>
+           {predictionResult.error ? (
+              <p className="text-red-600"><span className="font-medium">Status:</span> Failed - {predictionResult.error}</p>
           ) : (
             <> 
+              <p><span className="font-medium">Status:</span> {predictionResult.noael_result.status}</p>
               <p><span className="font-medium">Predicted NOAEL:</span> {predictionResult.noael_result.predicted_noael?.toFixed(2) ?? 'N/A'}</p>
               <p><span className="font-medium">Units:</span> {predictionResult.noael_result.units}</p>
               <p><span className="font-medium">Model Used:</span> {predictionResult.noael_result.model_used}</p>
             </>
           )}
+        </div>
+      )}
+      
+      {demoResult && (
+        <div className="mt-6 p-4 border border-purple-300 rounded shadow-md bg-purple-50">
+           <h3 className="text-lg font-semibold mb-2">{demoResult.demo_name} Results for {demoResult.study_id}</h3>
+           {demoResult.error ? (
+               <p className="text-orange-700"><span className="font-medium">Status:</span> Failed - {demoResult.error}</p>
+           ) : demoResult.results ? (
+             <> 
+               <p><span className="font-medium">Statistically Determined NOAEL:</span> {demoResult.results.overall_noael ?? 'Undetermined'} {demoResult.results.dose_units}</p>
+                <p className="mt-2 font-medium">Simulated LLM Response:</p>
+                <pre className="mt-1 p-2 bg-gray-100 border rounded text-sm whitespace-pre-wrap break-words">
+                    {demoResult.results.simulated_response ?? "No simulated response generated."} 
+                </pre>
+                {/* Optionally show the summary prompt 
+                <p className="mt-2 font-medium">Generated Summary Prompt:</p>
+                <pre className="mt-1 p-2 bg-gray-100 border rounded text-sm whitespace-pre-wrap break-words">
+                    {demoResult.results.summary_prompt ?? "No prompt generated."}
+                </pre>
+                */} 
+             </>
+           ) : (
+              <p className="text-gray-600">No results available for the demo.</p> 
+           )}
         </div>
       )}
     </div>

@@ -181,6 +181,17 @@ async def run_noael_prediction_ml(study_id: str = FastApiPath(..., description="
         # 1. Load Data
         logging.info("Step 1: Loading SEND domains...")
         loaded_data = load_send_study(study_path)
+        # --- DEBUG: Log loaded domains --- 
+        if loaded_data:
+             loaded_keys = list(loaded_data.keys())
+             logging.info(f"DEBUG: Domains loaded for {study_id}: {loaded_keys}")
+             if 'dm' in loaded_data and loaded_data['dm'] is not None:
+                  logging.info(f"DEBUG: DM columns: {list(loaded_data['dm'].columns)}")
+             else:
+                  logging.warning("DEBUG: DM domain not loaded or is None.")
+        else:
+             logging.warning(f"DEBUG: No data loaded for study {study_id}.")
+        # --- END DEBUG --- 
         if not loaded_data:
             raise HTTPException(status_code=400, detail="Failed to load SEND domains.")
 

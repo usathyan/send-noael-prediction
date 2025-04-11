@@ -14,41 +14,100 @@ import numpy as np
 from scipy import stats
 import logging
 from typing import Dict, Any, Optional, List, Tuple
+import re # Import regex module
 
 logger = logging.getLogger(__name__)
 
 # --- Helper Functions (Adapted from original script) ---
 
+def _extract_numeric_dose(dose_val: Any) -> Optional[float]:
+    """Attempts to extract a numeric dose value, handling strings."""
+    if pd.isna(dose_val):
+        return None
+    if isinstance(dose_val, (int, float)):
+        return float(dose_val)
+    if isinstance(dose_val, str):
+        # Try direct conversion first
+        try:
+            return float(dose_val)
+        except ValueError:
+            # If direct conversion fails, try regex to find number at the start
+            match = re.match(r"\s*(\d*\.?\d+)", dose_val)
+            if match:
+                try:
+                    return float(match.group(1))
+                except ValueError:
+                    return None
+            else:
+                return None
+    return None # Not a recognizable type
+
+
 def get_dose_groups_from_parsed(parsed_data: Dict[str, pd.DataFrame]) -> Tuple[Optional[Dict[Any, List[str]]], Optional[List[Any]]]:
     """Extracts dose groups and ordered doses from parsed DM and EX data."""
-    if 'dm' not in parsed_data or 'ex' not in parsed_data:
-        logger.warning("DM or EX data not found in parsed_data. Cannot determine dose groups.")
-        return None, None
-        
-    dm_df = parsed_data['dm']
-    ex_df = parsed_data['ex']
+    dm_df = parsed_data.get('demographics')
+    ex_df = parsed_data.get('exposure')
 
+    if dm_df is None:
+        logger.error("Parsed demographics data not found or is None. Cannot determine dose groups.")
+        return None, None
+    if ex_df is None:
+        logger.error("Parsed exposure data not found or is None. Cannot determine dose groups.")
+        return None, None
+
+    # Log unique raw EXDOSE values for debugging
+    if 'EXDOSE' in ex_df.columns:
+        try:
+            unique_raw_doses = ex_df['EXDOSE'].unique()
+            logger.info(f"DEBUG: Unique raw EXDOSE values found: {unique_raw_doses[:20]} {'...' if len(unique_raw_doses) > 20 else ''}") # Log first 20
+        except Exception as log_e:
+             logger.warning(f"DEBUG: Could not get unique raw EXDOSE values: {log_e}")
+    else:
+         logger.warning("DEBUG: EXDOSE column not found in exposure DataFrame.")
+
+    # Original checks for columns remain important
     if 'USUBJID' not in dm_df.columns or 'ARMCD' not in dm_df.columns:
          logger.warning("DM DataFrame missing USUBJID or ARMCD.")
-         return None, None
+         # Consider returning None, None here as well if these are critical
+         # return None, None 
     if 'USUBJID' not in ex_df.columns or 'EXDOSE' not in ex_df.columns:
          logger.warning("EX DataFrame missing USUBJID or EXDOSE.")
+         # Allow trying with ARMCD as proxy if EXDOSE missing?
+         # For now, returning error as original code implies EXDOSE is needed
          return None, None
 
     # Use SUBJECT level dose if available (more precise than ARMCD)
     subjects = dm_df[['USUBJID', 'ARMCD', 'SEX']].copy() # Add SEX if needed later
-    # Ensure EXDOSE is numeric, coercing errors
-    ex_df['EXDOSE_numeric'] = pd.to_numeric(ex_df['EXDOSE'], errors='coerce')
+    
+    # Apply robust dose extraction
+    logger.info("Applying robust numeric dose extraction to EXDOSE...")
+    ex_df['EXDOSE_numeric'] = ex_df['EXDOSE'].apply(_extract_numeric_dose)
+    num_failed_extraction = ex_df['EXDOSE_numeric'].isna().sum()
+    if num_failed_extraction > 0:
+        logger.warning(f"Could not extract numeric dose for {num_failed_extraction} EX records.")
+        # Log some examples of failed raw EXDOSE values
+        failed_examples = ex_df.loc[ex_df['EXDOSE_numeric'].isna(), 'EXDOSE'].unique()[:5]
+        logger.warning(f"Examples of failed EXDOSE values: {failed_examples}")
+
+    # Create doses DF from EX, dropping rows where extraction failed and duplicates
     doses = ex_df[['USUBJID', 'EXDOSE_numeric']].dropna(subset=['EXDOSE_numeric']).drop_duplicates()
     
     if doses.empty:
-        logger.warning("No valid numeric EXDOSE found. Cannot determine dose groups.")
+        logger.warning("No valid numeric EXDOSE found after extraction. Cannot determine dose groups.")
         return None, None
 
+    # Merge subjects with extracted doses
     subjects = subjects.merge(doses, on='USUBJID', how='left')
+    logger.info(f"Shape of subjects DF after merging doses: {subjects.shape}")
+    logger.info(f"Number of subjects with NaN EXDOSE_numeric after merge: {subjects['EXDOSE_numeric'].isna().sum()}")
+    logger.info(f"Value counts for EXDOSE_numeric before dropna:\n{subjects['EXDOSE_numeric'].value_counts(dropna=False)}")
     
-    # Handle subjects potentially missing dose info (though dropna should prevent this)
-    subjects = subjects.dropna(subset=['EXDOSE_numeric']) 
+    # Handle subjects potentially missing dose info
+    subjects_before_dropna = len(subjects)
+    subjects = subjects.dropna(subset=['EXDOSE_numeric'])
+    subjects_after_dropna = len(subjects)
+    if subjects_before_dropna > subjects_after_dropna:
+        logger.warning(f"Dropped {subjects_before_dropna - subjects_after_dropna} subjects due to missing numeric dose after merge.")
 
     # Group subjects by dose
     dose_groups = subjects.groupby('EXDOSE_numeric')['USUBJID'].apply(list).to_dict()
@@ -420,11 +479,20 @@ def run_noael_determination_demo(parsed_data: Dict[str, pd.DataFrame]) -> Dict[s
         results['dose_groups'] = dose_groups
         results['ordered_doses'] = ordered_doses
         
+        # Check if enough dose groups were found for comparison
+        if len(ordered_doses) < 2:
+            error_msg = "Insufficient dose groups identified (minimum 2 required for comparison). Likely due to missing EXDOSE values for treated subjects. Cannot perform comparative analysis."
+            results["error"] = error_msg
+            logger.error(error_msg)
+            return results # Stop processing for this demo
+            
         # Assume dose units from EX domain if possible, otherwise default
         dose_units = "mg/kg/day" # Default
-        if 'ex' in parsed_data and 'EXDOSU' in parsed_data['ex'].columns:
+        # Access the original ex_df from parsed_data, not the modified one inside get_dose_groups
+        ex_df_original = parsed_data.get('exposure') 
+        if ex_df_original is not None and 'EXDOSU' in ex_df_original.columns:
              # Get the most frequent unit if multiple exist
-             unit_counts = parsed_data['ex']['EXDOSU'].value_counts()
+             unit_counts = ex_df_original['EXDOSU'].value_counts()
              if not unit_counts.empty:
                  dose_units = unit_counts.index[0]
         results['dose_units'] = dose_units

@@ -1,6 +1,6 @@
 # Makefile for SEND NOAEL Prediction project
 
-.PHONY: help run-backend install check-venv test
+.PHONY: help run-backend install check-venv test run-frontend
 
 # Default target: Show help
 default: help
@@ -36,9 +36,15 @@ test: check-venv
 	$(VENV_DIR)/bin/mypy .
 	@echo "Testing commands finished."
 
+# Run the frontend development server
+run-frontend:
+	@echo "Starting frontend server (Next.js)..."
+	cd frontend && npm run dev # Use yarn dev if your project uses Yarn
+
 # Show help message
 help:
 	@echo "Available commands:"
 	@echo "  make install      Install Python dependencies from requirements.txt into .venv using uv"
 	@echo "  make run-backend  Run the backend FastAPI server (localhost:8000)"
-	@echo "  make test         Run Ruff linter/fixer and MyPy type checker" 
+	@echo "  make test         Run Ruff linter/fixer and MyPy type checker"
+	@echo "  make run-frontend Run the frontend Next.js development server (localhost:3000)" 

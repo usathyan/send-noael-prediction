@@ -8,28 +8,50 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def parse_demographics(dm_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     """Parses the Demographics (DM) domain.
 
-    Extracts key information like USUBJID, ARM, ACTARM, SEX.
-    Returns a DataFrame with essential demographic info or None.
+    Extracts key information like USUBJID, ARM, ARMCD, ACTARM, SEX.
+    Returns a DataFrame with essential demographic info or None if USUBJID is missing.
     """
     if dm_df is None or dm_df.empty:
         logging.warning("DM domain is missing or empty, cannot parse demographics.")
         return None
 
-    required_cols = ['USUBJID', 'ARM', 'ACTARM', 'SEX', 'SETCD']
-    if not all(col in dm_df.columns for col in required_cols):
-        missing = [col for col in required_cols if col not in dm_df.columns]
-        logging.warning(f"DM domain missing required columns: {missing}. Cannot parse accurately.")
-        # Return available columns subset if some essential ones exist
-        available_cols = [col for col in required_cols if col in dm_df.columns]
-        if 'USUBJID' in available_cols:
-             return dm_df[available_cols].drop_duplicates()
-        else:
-             return None
+    # Define columns considered essential for basic identification and grouping
+    essential_cols = ['USUBJID', 'ARMCD', 'SEX']
+    # Define columns that are good to have but might be missing
+    optional_cols = ['ARM', 'ACTARM', 'SETCD'] 
+    
+    present_essential = [col for col in essential_cols if col in dm_df.columns]
+    present_optional = [col for col in optional_cols if col in dm_df.columns]
+
+    # Must have USUBJID at a minimum
+    if 'USUBJID' not in present_essential:
+        logging.error("DM domain missing critical USUBJID column. Cannot parse demographics.")
+        return None
+        
+    # Check if other essential columns are missing for grouping
+    missing_essential = [col for col in essential_cols if col not in present_essential]
+    if missing_essential:
+         logging.warning(f"DM domain missing essential columns needed for some analyses: {missing_essential}. Proceeding with available data.")
+
+    # Check for missing optional columns (previously required)
+    missing_optional = [col for col in optional_cols if col not in present_optional]
+    if missing_optional:
+        logging.warning(f"DM domain missing optional columns: {missing_optional}. Parsing accuracy for some fields may be affected.")
+
+    # Select all available essential and optional columns
+    cols_to_keep = present_essential + present_optional
+    if not cols_to_keep:
+         # Should not happen due to USUBJID check, but as safety
+         return None 
 
     # Select relevant columns and remove duplicates (one row per subject)
-    # SETCD helps differentiate subjects if USUBJID is repeated across sets (unlikely but possible)
-    demographics = dm_df[required_cols].drop_duplicates()
-    logging.info(f"Parsed DM domain for {demographics.shape[0]} unique subjects.")
+    # Use USUBJID and SETCD (if available) for uniqueness check
+    unique_subset = ['USUBJID']
+    if 'SETCD' in cols_to_keep:
+         unique_subset.append('SETCD')
+         
+    demographics = dm_df[cols_to_keep].drop_duplicates(subset=unique_subset)
+    logging.info(f"Parsed DM domain for {demographics.shape[0]} unique subjects (using {unique_subset} for uniqueness).")
     return demographics
 
 def parse_exposure(ex_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:

@@ -24,7 +24,7 @@ The system allows users to upload SEND datasets (as zip archives containing `.xp
 *   Validate basic SEND domain presence.
 *   Parse key domains (Demographics, Exposure, Findings - LB, TS).
 *   Extract numerical features suitable for ML modeling.
-*   Predict NOAEL using a pre-trained ML model (currently uses a dummy model).
+*   Predict NOAEL using a pre-trained ML model (currently uses a *placeholder* XGBoost model trained on random data; predictions are not pharmacologically meaningful yet).
 *   FastAPI backend with Swagger UI documentation (`/docs`).
 
 ## Project Structure
@@ -43,7 +43,7 @@ SEND_NOAEL_Prediction/
 │   └── model/
 │       ├── __init__.py
 │       ├── saved_models/   # Directory for trained model files
-│       │   └── noael_xgboost_model.joblib # (Dummy) Pre-trained model
+│       │   └── noael_xgboost_model.joblib # Placeholder model (see Setup/Example notes)
 │       └── ml_predictor.py # Loads model and performs prediction
 ├── uploaded_studies/       # Default location for uploaded/extracted studies
 ├── .gitignore
@@ -88,12 +88,13 @@ SEND_NOAEL_Prediction/
         uv pip install -r requirements.txt
         ```
 
-5.  **Generate Dummy Model (if needed):**
-    The `requirements.txt` install should include `xgboost` and `scikit-learn`. A dummy model file (`noael_xgboost_model.joblib`) is needed for the API to run. If it doesn't exist, generate it:
+5.  **Generate Placeholder Model (if needed):**
+    The `requirements.txt` install includes `xgboost` and `scikit-learn`. A placeholder model file (`noael_xgboost_model.joblib`) is needed for the API pipeline to run end-to-end. **This model is trained on random data and its predictions are not meaningful.** It serves only to ensure the feature extraction and prediction pipeline works correctly. If the file doesn't exist or needs updating after feature changes, generate it:
     ```bash
-    .venv/bin/python3 python/model/ml_predictor.py
+    # Activate venv if not active: source .venv/bin/activate
+    python3 python/model/ml_predictor.py
     ```
-    *(This script needs to be run only once to create the file if it's missing)*
+    *(This script creates the placeholder XGBoost model file).*
 
 ## Running the API Server (Backend)
 
@@ -162,7 +163,7 @@ The frontend needs to know the backend API URL. It currently makes requests dire
 
 ## Example Prediction
 
-After uploading a study (e.g., `Vaccine-Study-1.zip`) via the `/upload/` endpoint (using the frontend's "Import Data" page or the backend's `/docs` UI), a successful call to `/predict/Vaccine-Study-1` using the current backend (with the dummy ML model) will return a response similar to this:
+After uploading a study (e.g., `Vaccine-Study-1.zip`) via the `/upload/` endpoint (using the frontend's "Import Data" page or the backend's `/docs` UI), a successful call to `/predict/Vaccine-Study-1` using the current backend (with the placeholder ML model) will return a response similar to this:
 
 ```json
 {
@@ -178,18 +179,18 @@ After uploading a study (e.g., `Vaccine-Study-1.zip`) via the `/upload/` endpoin
 }
 ```
 
-**Note:** The `predicted_noael` value is from the *dummy* model and is not pharmacologically meaningful until a real model is trained.
+**Important Note:** The `predicted_noael` value shown is from the *placeholder* model (trained on random data) and is **not** pharmacologically meaningful. It only demonstrates that the prediction pipeline executed successfully. A real model must be trained on actual study data for meaningful results.
 
 ## Future Work / Improvements
 
-*   **Train a real ML Model:** Collect a labeled dataset (SEND studies + NOAELs) and train the XGBoost (or other) model.
+*   **Train a Real ML Model:** Replace the current placeholder model by collecting a labeled dataset (SEND studies + validated NOAELs) and training the XGBoost (or other) model on this real data.
 *   **Refine Feature Engineering:** Improve the feature extraction process in `feature_extractor.py` based on domain knowledge and model performance.
 *   **Model Evaluation:** Implement proper model evaluation metrics.
 *   **Confidence Scores:** Develop a method to estimate confidence in the ML predictions.
 *   **Error Handling:** Enhance error handling and validation.
 *   **Frontend:** Develop a user interface (e.g., using Next.js) for easier interaction.
 *   **Configuration:** Make model paths, upload directories, etc., configurable.
-*   **Testing:** Add unit and integration tests. 
+*   **Testing:** Add unit and integration tests.
 
 # SEND NOAEL Prediction API (TxGemma Demos)
 
