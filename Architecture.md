@@ -47,23 +47,33 @@ The system consists of the following main Python components:
 
 ## 3. Data Flow (Analyze Endpoint)
 
-A typical request to `/analyze_noael/{study_id}` follows this flow:
+```mermaid
+sequenceDiagram
+    participant Client
+    participant FastAPI as main.py
+    participant Loader as send_loader.py
+    participant Parser as domain_parser.py
+    participant Processor as noael_processor.py
+    participant FriendliAPI
 
-1.  Request received by FastAPI (`src/api/main.py`).
-2.  `main.py` validates the `study_id` and locates the study directory in `uploaded_studies/`.
-3.  `main.py` calls `src.data_processing.send_loader.load_send_study` to read required `.xpt` files (DM, EX, TS, BW, and attempts CL, LB, MA, MI, OM) into pandas DataFrames.
-4.  `main.py` calls `src.data_processing.domain_parser.parse_domains` to preprocess these DataFrames.
-5.  `main.py` calls `src.processing.noael_processor.process_study_for_txgemma`, passing the parsed data.
-6.  `src/processing/noael_processor.py` performs Body Weight analysis and basic summarization for other available domains (CL, LB, MA, MI, OM).
-7.  `src/processing/noael_processor.py` generates the `comprehensive_findings_summary`.
-8.  `src/processing/noael_processor.py` generates the `llm_prompt` string using the comprehensive summary.
-9.  `src/processing/noael_processor.py` retrieves Friendli token from environment variables.
-10. `src/processing/noael_processor.py` uses the `requests` library to send the prompt to the Friendli LLM API.
-11. The Friendli LLM API processes the prompt and returns a streamed response.
-12. `src/processing/noael_processor.py` receives and concatenates the `llm_response` text from the stream (or handles errors).
-13. `src/processing/noael_processor.py` packages the `comprehensive_findings_summary`, prompt, response, and status into a result dictionary.
-14. `main.py` receives the result dictionary.
-15. `main.py` formats the result as a JSON response and sends it back to the client.
+    Client->>+FastAPI: POST /analyze_noael/{study_id}
+    FastAPI->>FastAPI: Validate study_id, locate study dir
+    FastAPI->>+Loader: load_send_study(study_dir)
+    Loader-->>-FastAPI: domain_dataframes (DM, EX, TS, BW, CL, LB, etc.)
+    FastAPI->>+Parser: parse_domains(domain_dataframes)
+    Parser-->>-FastAPI: parsed_data
+    FastAPI->>+Processor: process_study_for_txgemma(parsed_data, study_id)
+    Processor->>Processor: Analyze BW, Summarize other domains (CL, LB, etc.)
+    Processor->>Processor: Generate comprehensive_findings_summary
+    Processor->>Processor: Generate llm_prompt
+    Processor->>Processor: Retrieve FRIENDLI_TOKEN from env
+    Processor->>+FriendliAPI: POST /dedicated/v1/chat/completions (prompt, token)
+    FriendliAPI-->>-Processor: Streamed LLM Response
+    Processor->>Processor: Concatenate stream, handle errors
+    Processor-->>-FastAPI: result_dict (summary, prompt, response, status)
+    FastAPI->>FastAPI: Format JSON response
+    FastAPI-->>-Client: JSON Response
+```
 
 ## 4. Key Technologies
 
