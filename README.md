@@ -1,8 +1,10 @@
-# SEND NOAEL Analysis API (LLM Demo)
+# SEND NOAEL Analysis API Service
 
 ## Overview
 
 [TxGemma](https://arxiv.org/abs/2504.06196v1), a new therapeutic Model from Google, provides explainability of predictions and conversational capabilities in natural langauge, abstracting the nuances of interpretations related to predictions, making the predictions accessible and trustworthy (due to transparency of interpretations, see [TDC](https://tdcommons.ai/)) for details.
+
+This is a sample project for demonstrating how to use it for predicting toxicity using SEND datasets.
 
 ### Here is what you will see (swagger ui) when you run this demo:
 
