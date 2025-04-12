@@ -33,29 +33,6 @@ The current implementation in `noael_processor.py` focuses on:
 *   **Reasoned Output:** Returns the LLM's response, which ideally includes a NOAEL assessment and the reasoning based on the provided summary (`/analyze_noael/{study_id}`).
 *   **FastAPI Backend:** Simple and efficient API built with FastAPI.
 
-## Project History & Evolution
-
-This project underwent several iterations, exploring different approaches to NOAEL prediction from SEND data. These are available in previous versions of this git repo:
-
-1.  **Initial TxGemma Attempt (Local Inference):** The project initially aimed to use the TxGemma model (e.g., `txgemma-2b`) directly via the Hugging Face `transformers` library. The goal was for the LLM to infer the NOAEL from a generated text summary. This faced challenges related to:
-    *   The model's primary capability being text generation, not quantitative regression.
-    *   Inconsistent and often unparsable output formats.
-    *   The complexity of representing structured SEND data effectively in a text prompt for reliable numerical prediction.
-    *   Significant compute resource requirements for local inference.
-
-2.  **Pivot to Traditional Machine Learning:** Due to the difficulties with direct LLM prediction, the project pivoted to a traditional ML approach. This involved:
-    *   Extensive feature engineering (`feature_extractor.py`) to create numerical/categorical vectors from SEND domains (DM, EX, LB, BW, etc.).
-    *   Training an XGBoost model (`ml_predictor.py`) on these features (using a placeholder model trained on random data for pipeline testing).
-    *   Building API endpoints to serve predictions from this ML model.
-
-3.  **Refocus on LLM Reasoning (API Demo - Current State):** Recognizing the strengths of LLMs in natural language understanding and reasoning, the project was refocused again. The goal shifted from *direct prediction* by the LLM to *demonstrating its ability to assist in NOAEL assessment by reasoning over summarized findings*. This led to the current architecture:
-    *   Removal of the traditional ML pipeline and frontend.
-    *   Simplification of data processing to focus on generating a concise, informative text summary of key findings (starting with Body Weight).
-    *   Using your self-hosted Friendli API for the LLM interaction.
-    *   The output now emphasizes the LLM's textual response and reasoning, rather than just a single numerical prediction.
-
-This evolution highlights the different ways AI models can be applied to scientific problems and the importance of matching the model's capabilities (text generation vs. numerical prediction) to the specific task.
-
 ## Project Structure
 
 ```
@@ -248,4 +225,25 @@ Screenshot illustrating model card on Hugging Face:
 Screenshot illustrating model running on Friendli service:
 ![Hugging Face](images/friendli.png)
 
+## Project History & Evolution
 
+This project underwent several iterations, exploring different approaches to NOAEL prediction from SEND data. These are available in previous versions of this git repo:
+
+1.  **Initial TxGemma Attempt (Local Inference):** The project initially aimed to use the TxGemma model (e.g., `txgemma-2b`) directly via the Hugging Face `transformers` library. The goal was for the LLM to infer the NOAEL from a generated text summary. This faced challenges related to:
+    *   The model's primary capability being text generation, not quantitative regression.
+    *   Inconsistent and often unparsable output formats.
+    *   The complexity of representing structured SEND data effectively in a text prompt for reliable numerical prediction.
+    *   Significant compute resource requirements for local inference.
+
+2.  **Pivot to Traditional Machine Learning:** Due to the difficulties with direct LLM prediction, the project pivoted to a traditional ML approach. This involved:
+    *   Extensive feature engineering (`feature_extractor.py`) to create numerical/categorical vectors from SEND domains (DM, EX, LB, BW, etc.).
+    *   Training an XGBoost model (`ml_predictor.py`) on these features (using a placeholder model trained on random data for pipeline testing).
+    *   Building API endpoints to serve predictions from this ML model.
+
+3.  **Refocus on LLM Reasoning (API Demo - Current State):** Recognizing the strengths of LLMs in natural language understanding and reasoning, the project was refocused again. The goal shifted from *direct prediction* by the LLM to *demonstrating its ability to assist in NOAEL assessment by reasoning over summarized findings*. This led to the current architecture:
+    *   Removal of the traditional ML pipeline and frontend.
+    *   Simplification of data processing to focus on generating a concise, informative text summary of key findings (starting with Body Weight).
+    *   Using your self-hosted Friendli API for the LLM interaction.
+    *   The output now emphasizes the LLM's textual response and reasoning, rather than just a single numerical prediction.
+
+This evolution highlights the different ways AI models can be applied to scientific problems and the importance of matching the model's capabilities (text generation vs. numerical prediction) to the specific task.
