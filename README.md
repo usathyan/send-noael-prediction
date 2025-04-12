@@ -138,7 +138,6 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
         *   **status:** `Analysis Successful`
         *   **analysis_type:** `Comprehensive`
         *   **comprehensive_findings_summary:** (Summary generated from BW, CL, LB, etc. - example below)
-            ```text
             - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
 
             --- Clinical Observations (CL) Summary ---
@@ -147,9 +146,7 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
             --- Laboratory Tests (LB) Summary ---
             Mean values for key tests:
             - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
-            ```
         *   **llm_prompt:** (The full prompt text sent to the LLM, including metadata and comprehensive summary)
-            ```text
             Analyze the following preclinical toxicology study data to help assess the No Observed Adverse Effect Level (NOAEL):
 
             Study Metadata:
@@ -176,9 +173,8 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
             4. Discuss any limitations in the provided data for making a definitive NOAEL determination.
 
             Please ensure your response specifies the dose units (ug/dose).
-            ```
         *   **llm_response:** (The full response text from the LLM)
-            ```text
+
             ## Analysis of Preclinical Toxicology Study Data
 
             **1. Key Toxicology Findings:**
@@ -210,7 +206,6 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
             * **Definition of the study duration.** 
 
             Only with this information can a reliable NOAEL determination be made.
-            ```
         *   **error:** `null`
 
         *(Note: In this example, the LLM correctly identifies that it cannot determine the NOAEL with only control group data.)*
