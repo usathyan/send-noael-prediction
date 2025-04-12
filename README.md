@@ -2,9 +2,22 @@
 
 ## Overview
 
-This project provides a focused backend API demo showcasing the capabilities of Large Language Models (LLMs) like Google's Gemini family (accessed via OpenRouter) for analyzing preclinical toxicology studies (SEND format) to assist in NOAEL (No Observed Adverse Effect Level) assessment.
+[TxGemma](https://arxiv.org/abs/2504.06196v1), a new therapeutic Model from Google, provides explainability of predictions and conversational capabilities in natural langauge, abstracting the nuances of interpretations related to predictions, making the predictions accessible and trustworthy (due to transparency of interpretations, see [TDC](https://tdcommons.ai/)) for details.
 
-[TxGemma](https://arxiv.org/abs/2504.06196v1), a new Tx Model from Google, provides explainability of predictions in natural laguage and conversational capabilities with those predictions, direclty in the hands of drug discovery scientists, abstracting all the mathematical nuances of interpretations related to predictions, making the predictions accessible and trustworthy (due to transparency of interpretations). You can read more about it in the paper referenced.
+### Here is what you will see (swagger ui) when you run this demo:
+
+![Swagger UI](images/swagger_ui_demo.png "Swagger UI showing Upload and Analyze Endpoints")
+
+### Current Analysis Strategy (Body Weight)
+
+The current implementation in `noael_processor.py` focuses on:
+1.  Loading DM, EX, TS, BW domains.
+2.  Identifying dose groups from EX.
+3.  Calculating percentage body weight change from baseline for each subject.
+4.  Aggregating mean changes per dose group at key time points (e.g., study end).
+5.  Generating a structured text prompt summarizing study metadata and these BW findings.
+6.  Sending the prompt to the configured LLM via OpenRouter.
+
 
 **Goal:** Demonstrate how an LLM can process summarized findings from a SEND study (currently focusing on Body Weight changes) and provide both a potential NOAEL assessment and the reasoning behind it, aligning with the goal of explainable AI in therapeutic development. The previous versions and sample python files in the manus folder should give you more representative examples on other predictions to try out.
 
@@ -144,19 +157,3 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
 ## API Documentation UI (Swagger)
 
 The API includes interactive documentation provided by Swagger UI, available at the `/docs` endpoint (e.g., `http://127.0.0.1:8000/docs`) when the server is running.
-
-You can use this interface to explore the endpoints, view request/response models, and directly execute API calls:
-
-![Swagger UI Demo](images/swagger_ui_demo.png "Swagger UI showing Upload and Analyze Endpoints")
-
-## Current Analysis Strategy (Body Weight)
-
-The current implementation in `noael_processor.py` focuses on:
-1.  Loading DM, EX, TS, BW domains.
-2.  Identifying dose groups from EX.
-3.  Calculating percentage body weight change from baseline for each subject.
-4.  Aggregating mean changes per dose group at key time points (e.g., study end).
-5.  Generating a structured text prompt summarizing study metadata and these BW findings.
-6.  Sending the prompt to the configured LLM via OpenRouter.
-
-
