@@ -1,50 +1,49 @@
-# Makefile for SEND NOAEL Prediction project
+# Makefile for SEND NOAEL Prediction (TxGemma Demo)
 
-.PHONY: help run-backend install check-venv test run-frontend
+.DEFAULT_GOAL := help
 
-# Default target: Show help
-default: help
+# --- Configuration ---
+PYTHON := python3
+UV := uv
+APP_MODULE := src.api.main:app
+HOST := 127.0.0.1
+PORT := 8000
 
-# Check if the virtual environment directory exists
-VENV_DIR := .venv
-check-venv:
-	@if [ ! -d "$(VENV_DIR)" ]; then \
-		echo "Virtual environment '$(VENV_DIR)' not found."; \
-		echo "Please create it first using 'uv venv --python python3.x' (replace 3.x) and install dependencies ('make install')."; \
-		exit 1; \
-	fi
+# Check if running in a uv venv
+ifeq ($(findstring .venv,$(VIRTUAL_ENV)),.venv)
+    RUN_PREFIX := $(UV) run
+else
+    RUN_PREFIX := 
+endif
 
-# Install dependencies using uv
-install:
-	@if [ ! -f "requirements.txt" ]; then \
-		echo "requirements.txt not found."; \
-		exit 1; \
-	fi
-	uv pip install -r requirements.txt
-	@echo "Dependencies installed using uv."
+# --- Targets ---
 
-# Run the backend FastAPI server with auto-reload
-run-backend: check-venv
-	@echo "Starting backend server (FastAPI/Uvicorn)..."
-	$(VENV_DIR)/bin/python -m uvicorn python.api.main:app --reload --host 127.0.0.1 --port 8000
+install: ## Create virtual env and install dependencies using uv
+	@echo "Creating virtual environment and installing dependencies..."
+	@$(UV) venv --python $(PYTHON) || (echo "Failed to create virtual environment." && exit 1)
+	@$(UV) pip install -r requirements.txt || (echo "Failed to install requirements." && exit 1)
+	@echo "Installation complete. Activate with: source .venv/bin/activate"
 
-# Run linters and type checker
-test: check-venv
-	@echo "Running Ruff linter and auto-fixer..."
-	$(VENV_DIR)/bin/ruff check --fix .
-	@echo "Running MyPy type checker..."
-	$(VENV_DIR)/bin/mypy .
-	@echo "Testing commands finished."
+run: ## Run the FastAPI server using uvicorn
+	@echo "Starting FastAPI server at http://$(HOST):$(PORT)..."
+	@$(RUN_PREFIX) uvicorn $(APP_MODULE) --host $(HOST) --port $(PORT) --reload
 
-# Run the frontend development server
-run-frontend:
-	@echo "Starting frontend server (Next.js)..."
-	cd frontend && npm run dev # Use yarn dev if your project uses Yarn
+lint: ## Lint the python code using ruff
+	@echo "Linting Python code..."
+	@$(RUN_PREFIX) ruff check src/
 
-# Show help message
-help:
+format: ## Format the python code using ruff
+	@echo "Formatting Python code..."
+	@$(RUN_PREFIX) ruff format src/
+
+clean: ## Remove generated files and directories
+	@echo "Cleaning up..."
+	@rm -rf .venv uploaded_studies/__pycache__ src/**/__pycache__ .ruff_cache
+	@find . -name ".DS_Store" -delete
+
+help: ## Display this help message
 	@echo "Available commands:"
-	@echo "  make install      Install Python dependencies from requirements.txt into .venv using uv"
-	@echo "  make run-backend  Run the backend FastAPI server (localhost:8000)"
-	@echo "  make test         Run Ruff linter/fixer and MyPy type checker"
-	@echo "  make run-frontend Run the frontend Next.js development server (localhost:3000)" 
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: install run lint format clean help 
