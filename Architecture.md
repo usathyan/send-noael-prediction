@@ -29,20 +29,20 @@ The system consists of the following main Python components:
 
 4.  **NOAEL Processor (`src/processing/noael_processor.py`):**
     *   **This is the core logic module for the demo.**
-    *   Receives parsed domain data.
-    *   **Analysis:** Implements the specific analysis strategy (e.g., calculating body weight changes, comparing to controls).
-    *   **Prompt Generation:** Constructs a detailed, structured natural language prompt summarizing the analysis findings.
+    *   Receives parsed domain data (DM, EX, TS, BW, CL, LB, MA, MI, OM).
+    *   **Analysis:** Implements the specific analysis strategy for relevant domains (currently focusing on Body Weight changes, basic summaries for CL, LB, MA, MI, OM).
+    *   **Summarization:** Creates a `comprehensive_findings_summary` string by combining summaries from BW and other available domains.
+    *   **Prompt Generation:** Constructs a detailed, structured natural language prompt including study metadata and the `comprehensive_findings_summary`.
     *   **LLM Interaction:** 
-        *   Retrieves OpenRouter API credentials and configuration from environment variables.
-        *   Instantiates an `openai.OpenAI` client configured for the OpenRouter API endpoint.
-        *   Sends the generated prompt to the configured LLM API via the client.
-        *   Handles the response from the LLM, including potential errors.
+        *   Retrieves Friendli API token (`FRIENDLI_TOKEN`) from environment variables.
+        *   Uses the `requests` library to make a POST request to the Friendli API endpoint (`https://api.friendli.ai/dedicated/v1/chat/completions`).
+        *   Sends the generated prompt and necessary parameters (model ID `2c137my37hew`, `max_tokens`, `stream`, etc.) in the payload.
+        *   Handles the streamed response from the LLM, including potential errors.
     *   Returns the analysis results, the prompt sent, and the LLM response.
 
 5.  **Configuration (`.env` file):**
-    *   Stores sensitive information like the OpenRouter API key (`OPENROUTER_API_KEY`).
-    *   Stores the target LLM model identifier (`LLM_MODEL_NAME`).
-    *   May store optional OpenRouter headers (`OPENROUTER_SITE_URL`, `OPENROUTER_SITE_NAME`).
+    *   Stores sensitive information like the Friendli API token (`FRIENDLI_TOKEN`).
+    *   Note: The target LLM model ID and Friendli API URL are currently hardcoded in `src/processing/noael_processor.py`.
     *   Loaded at application startup using `python-dotenv`.
 
 ## 3. Data Flow (Analyze Endpoint)
@@ -51,18 +51,19 @@ A typical request to `/analyze_noael/{study_id}` follows this flow:
 
 1.  Request received by FastAPI (`src/api/main.py`).
 2.  `main.py` validates the `study_id` and locates the study directory in `uploaded_studies/`.
-3.  `main.py` calls `src.data_processing.send_loader.load_send_study` to read required `.xpt` files (DM, EX, TS, BW) into pandas DataFrames.
+3.  `main.py` calls `src.data_processing.send_loader.load_send_study` to read required `.xpt` files (DM, EX, TS, BW, and attempts CL, LB, MA, MI, OM) into pandas DataFrames.
 4.  `main.py` calls `src.data_processing.domain_parser.parse_domains` to preprocess these DataFrames.
 5.  `main.py` calls `src.processing.noael_processor.process_study_for_txgemma`, passing the parsed data.
-6.  `src/processing/noael_processor.py` performs Body Weight analysis.
-7.  `src/processing/noael_processor.py` generates the `llm_prompt` string.
-8.  `src/processing/noael_processor.py` retrieves API key from environment variables.
-9.  `src/processing/noael_processor.py` uses the `openai` client (configured for OpenRouter) to send the prompt to the LLM API.
-10. The LLM API processes the prompt and returns a response.
-11. `src/processing/noael_processor.py` receives the `llm_response` text (or handles errors).
-12. `src/processing/noael_processor.py` packages the prompt, response, and status into a result dictionary.
-13. `main.py` receives the result dictionary.
-14. `main.py` formats the result as a JSON response and sends it back to the client.
+6.  `src/processing/noael_processor.py` performs Body Weight analysis and basic summarization for other available domains (CL, LB, MA, MI, OM).
+7.  `src/processing/noael_processor.py` generates the `comprehensive_findings_summary`.
+8.  `src/processing/noael_processor.py` generates the `llm_prompt` string using the comprehensive summary.
+9.  `src/processing/noael_processor.py` retrieves Friendli token from environment variables.
+10. `src/processing/noael_processor.py` uses the `requests` library to send the prompt to the Friendli LLM API.
+11. The Friendli LLM API processes the prompt and returns a streamed response.
+12. `src/processing/noael_processor.py` receives and concatenates the `llm_response` text from the stream (or handles errors).
+13. `src/processing/noael_processor.py` packages the `comprehensive_findings_summary`, prompt, response, and status into a result dictionary.
+14. `main.py` receives the result dictionary.
+15. `main.py` formats the result as a JSON response and sends it back to the client.
 
 ## 4. Key Technologies
 
@@ -71,7 +72,7 @@ A typical request to `/analyze_noael/{study_id}` follows this flow:
 *   **Uvicorn:** ASGI server to run the FastAPI application.
 *   **Pandas:** Data manipulation and analysis (for handling SEND domain data).
 *   **Pyreadstat:** Reading SAS `.xpt` files.
-*   **openai:** Client library used to interact with the OpenRouter API (imitating OpenAI API structure).
+*   **requests:** Used for making HTTP calls to the Friendli API.
 *   **python-dotenv:** Loading environment variables for configuration.
 *   **uv:** Package and environment management.
 
