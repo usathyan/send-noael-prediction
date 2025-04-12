@@ -139,11 +139,9 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
         *   **analysis_type:** `Comprehensive`
         *   **comprehensive_findings_summary:** (Summary generated from BW, CL, LB, etc. - example below)
             - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
-
-            --- Clinical Observations (CL) Summary ---
-            Relevant columns (e.g., CLTERM) not found.
-
-            --- Laboratory Tests (LB) Summary ---
+            - Clinical Observations (CL) Summary
+            - Relevant columns (e.g., CLTERM) not found.
+            - Laboratory Tests (LB) Summary
             Mean values for key tests:
             - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
         *   **llm_prompt:** (The full prompt text sent to the LLM, including metadata and comprehensive summary)
@@ -158,11 +156,9 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
 
             Comprehensive Findings Summary:
             - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
-
-            --- Clinical Observations (CL) Summary ---
-            Relevant columns (e.g., CLTERM) not found.
-
-            --- Laboratory Tests (LB) Summary ---
+            - Clinical Observations (CL) Summary: not found
+            - Relevant columns (e.g., CLTERM) not found
+            - Laboratory Tests (LB) Summary: not found
             Mean values for key tests:
             - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
 
