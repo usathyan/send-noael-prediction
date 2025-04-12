@@ -132,79 +132,79 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
     *   `llm_response` (The response received from the LLM)
     *   `error` (Details if an error occurred)
 
-    *   **Example Successful Response (TxGemma response based on Sample data provided):**
+        **Example Successful Response (TxGemma response based on Sample data provided):**
 
-        *   **study_id:** `study-a`
-        *   **status:** `Analysis Successful`
-        *   **analysis_type:** `Comprehensive`
-        *   **comprehensive_findings_summary:** (Summary generated from BW, CL, LB, etc. - example below)
-            - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
-            - Clinical Observations (CL) Summary
-            - Relevant columns (e.g., CLTERM) not found.
-            - Laboratory Tests (LB) Summary
-            Mean values for key tests:
-            - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
-        *   **llm_prompt:** (The full prompt text sent to the LLM, including metadata and comprehensive summary)
-            Analyze the following preclinical toxicology study data to help assess the No Observed Adverse Effect Level (NOAEL):
+    *   **study_id:** `study-a`
+    *   **status:** `Analysis Successful`
+    *   **analysis_type:** `Comprehensive`
+    *   **comprehensive_findings_summary:** (Summary generated from BW, CL, LB, etc. - example below)
+        - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
+        - Clinical Observations (CL) Summary
+        - Relevant columns (e.g., CLTERM) not found.
+        - Laboratory Tests (LB) Summary
+        Mean values for key tests:
+        - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
+    *   **llm_prompt:** (The full prompt text sent to the LLM, including metadata and comprehensive summary)
+        Analyze the following preclinical toxicology study data to help assess the No Observed Adverse Effect Level (NOAEL):
 
-            Study Metadata:
-            - Species: Not specified
-            - Sexes Tested: F
-            - Planned Duration: Not specified
-            - Route of Administration: INTRAMUSCULAR
-            - Test Article: Hepatitis B Vaccine
+        Study Metadata:
+        - Species: Not specified
+        - Sexes Tested: F
+        - Planned Duration: Not specified
+        - Route of Administration: INTRAMUSCULAR
+        - Test Article: Hepatitis B Vaccine
 
-            Comprehensive Findings Summary:
-            - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
-            - Clinical Observations (CL) Summary: not found
-            - Relevant columns (e.g., CLTERM) not found
-            - Laboratory Tests (LB) Summary: not found
-            Mean values for key tests:
-            - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
+        Comprehensive Findings Summary:
+        - Control Group (20.00 ug/dose): Mean terminal BW change: 1.82%
+        - Clinical Observations (CL) Summary: not found
+        - Relevant columns (e.g., CLTERM) not found
+        - Laboratory Tests (LB) Summary: not found
+        Mean values for key tests:
+        - Control Group (20.00 ug/dose): ALT: 41.12 U/L; AST: 39.00 U/L
 
-            Based on the provided study metadata and comprehensive findings summary:
-            1. Identify the key toxicology findings suggested by the data.
-            2. Provide an overall toxicological assessment based on these findings.
-            3. Assess the characteristics relevant to determining the No Observed Adverse Effect Level (NOAEL).
-            4. Discuss any limitations in the provided data for making a definitive NOAEL determination.
+        Based on the provided study metadata and comprehensive findings summary:
+        1. Identify the key toxicology findings suggested by the data.
+        2. Provide an overall toxicological assessment based on these findings.
+        3. Assess the characteristics relevant to determining the No Observed Adverse Effect Level (NOAEL).
+        4. Discuss any limitations in the provided data for making a definitive NOAEL determination.
 
-            Please ensure your response specifies the dose units (ug/dose).
-        *   **llm_response:** (The full response text from the LLM)
+        Please ensure your response specifies the dose units (ug/dose).
+    *   **llm_response:** (The full response text from the LLM)
 
-            ## Analysis of Preclinical Toxicology Study Data
+        ## Analysis of Preclinical Toxicology Study Data
 
-            **1. Key Toxicology Findings:**
-            The provided data suggests the following key toxicological findings:
+        **1. Key Toxicology Findings:**
+        The provided data suggests the following key toxicological findings:
 
-            - **Body Weight Change:**  The control group (receiving 20.00 ug/dose) exhibited a mean terminal body weight change of 1.82%. This suggests a potential for weight alteration with the test article. 
-            - **Liver Function Tests:** The control group displayed ALT and AST levels of 41.12 U/L and 39.00 U/L, respectively. These values should be compared to species-specific normal ranges to assess potential liver toxicity.
+        - **Body Weight Change:**  The control group (receiving 20.00 ug/dose) exhibited a mean terminal body weight change of 1.82%. This suggests a potential for weight alteration with the test article. 
+        - **Liver Function Tests:** The control group displayed ALT and AST levels of 41.12 U/L and 39.00 U/L, respectively. These values should be compared to species-specific normal ranges to assess potential liver toxicity.
 
-            **2. Overall Toxicological Assessment:**
-            Based on the limited data, it is difficult to provide a definitive overall toxicological assessment.  The observed body weight change warrants further investigation, as it could indicate general toxicity or specific effects related to the target organ (liver?).  The ALT and AST values are within the normal range for the control group, but comparison with species-specific norms is necessary to rule out any subtle liver toxicity.
+        **2. Overall Toxicological Assessment:**
+        Based on the limited data, it is difficult to provide a definitive overall toxicological assessment.  The observed body weight change warrants further investigation, as it could indicate general toxicity or specific effects related to the target organ (liver?).  The ALT and AST values are within the normal range for the control group, but comparison with species-specific norms is necessary to rule out any subtle liver toxicity.
 
-            **3. Characteristics Relevant to NOAEL Determination:**
-            - **Dose Levels:** The data only presents one dose level (20.00 ug/dose). To determine the NOAEL, a range of doses needs to be tested, including doses below and above the observed effect.
-            - **Control Group:**  The control group data serves as a baseline for comparison. However, the absence of "Clinical Observations (CL)" and detailed "Laboratory Tests (LB)" summaries limits the ability to assess the full spectrum of potential adverse effects.
+        **3. Characteristics Relevant to NOAEL Determination:**
+        - **Dose Levels:** The data only presents one dose level (20.00 ug/dose). To determine the NOAEL, a range of doses needs to be tested, including doses below and above the observed effect.
+        - **Control Group:**  The control group data serves as a baseline for comparison. However, the absence of "Clinical Observations (CL)" and detailed "Laboratory Tests (LB)" summaries limits the ability to assess the full spectrum of potential adverse effects.
 
-            **4. Limitations for NOAEL Determination:**
-            - **Lack of Dose Range:**  The absence of multiple doses makes it impossible to establish a dose-response relationship and pinpoint the NOAEL.
-            - **Incomplete Clinical Data:** The lack of clinical observations and a comprehensive list of laboratory tests hinders a thorough evaluation of potential toxic effects beyond body weight and liver function.
-            - **Species Not Specified:**  Physiological responses to the test article can vary significantly between species. The lack of species information makes it difficult to interpret the data in a broader context.
-            - **Planned Duration Not Specified:** The study duration is unknown, which makes it challenging to assess the potential for delayed or chronic toxicity.
+        **4. Limitations for NOAEL Determination:**
+        - **Lack of Dose Range:**  The absence of multiple doses makes it impossible to establish a dose-response relationship and pinpoint the NOAEL.
+        - **Incomplete Clinical Data:** The lack of clinical observations and a comprehensive list of laboratory tests hinders a thorough evaluation of potential toxic effects beyond body weight and liver function.
+        - **Species Not Specified:**  Physiological responses to the test article can vary significantly between species. The lack of species information makes it difficult to interpret the data in a broader context.
+        - **Planned Duration Not Specified:** The study duration is unknown, which makes it challenging to assess the potential for delayed or chronic toxicity.
 
-            **Conclusion:**
-            The provided data offers limited insight into the toxicological profile of the Hepatitis B Vaccine. To determine the NOAEL, a more comprehensive study is required, including:
+        **Conclusion:**
+        The provided data offers limited insight into the toxicological profile of the Hepatitis B Vaccine. To determine the NOAEL, a more comprehensive study is required, including:
 
-            * **Multiple dose levels** to establish a dose-response relationship.
-            * **Detailed clinical observations** to monitor for any adverse effects.
-            * **A comprehensive battery of laboratory tests** to assess various organ systems.
-            * **Specification of the test species.**
-            * **Definition of the study duration.** 
+        * **Multiple dose levels** to establish a dose-response relationship.
+        * **Detailed clinical observations** to monitor for any adverse effects.
+        * **A comprehensive battery of laboratory tests** to assess various organ systems.
+        * **Specification of the test species.**
+        * **Definition of the study duration.** 
 
-            Only with this information can a reliable NOAEL determination be made.
-        *   **error:** `null`
+        Only with this information can a reliable NOAEL determination be made.
+    *   **error:** `null`
 
-        *(Note: In this example, the LLM correctly identifies that it cannot determine the NOAEL with only control group data.)*
+    *(Note: In this example, the LLM correctly identifies that it cannot determine the NOAEL with only control group data.)*
 
 ## API Documentation UI (Swagger)
 
