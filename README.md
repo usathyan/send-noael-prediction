@@ -4,13 +4,15 @@
 
 This project provides a focused backend API demo showcasing the capabilities of Large Language Models (LLMs) like Google's Gemini family (accessed via OpenRouter) for analyzing preclinical toxicology studies (SEND format) to assist in NOAEL (No Observed Adverse Effect Level) assessment.
 
-**Goal:** Demonstrate how an LLM can process summarized findings from a SEND study (currently focusing on Body Weight changes) and provide both a potential NOAEL assessment and the reasoning behind it, aligning with the goal of explainable AI in therapeutic development.
+[TxGemma](https://arxiv.org/abs/2504.06196v1), a new Tx Model from Google, provides explainability of predictions in natural laguage and conversational capabilities with those predictions, direclty in the hands of drug discovery scientists, abstracting all the mathematical nuances of interpretations related to predictions, making the predictions accessible and trustworthy (due to transparency of interpretations). You can read more about it in the paper referenced.
+
+**Goal:** Demonstrate how an LLM can process summarized findings from a SEND study (currently focusing on Body Weight changes) and provide both a potential NOAEL assessment and the reasoning behind it, aligning with the goal of explainable AI in therapeutic development. The previous versions and sample python files in the manus folder should give you more representative examples on other predictions to try out.
 
 **Note:** This repository represents the final state of a project that evolved significantly. See the "Project History" section below for details on previous approaches involving direct TxGemma inference and traditional Machine Learning models.
 
 ## Features
 
-*   **Upload SEND Study:** Accepts a Zip archive containing study `.xpt` files via a REST API endpoint (`/upload/`).
+*   **Upload SEND Study:** Accepts a Zip archive containing study `.xpt` files via a REST API endpoint (`/upload/`). I have a sample selection of sample SEND datasets downloaded from [phuse](https://github.com/phuse-org/SEND-Coding-Bootcamp/tree/main/data/mock_SEND_data), in the data folder. 
 *   **Data Parsing:** Parses key SEND domains required for the analysis (currently DM, EX, TS, BW).
 *   **Finding Summarization:** Analyzes specific findings (currently Body Weight changes over time compared to controls) and generates a structured natural language prompt.
 *   **LLM Interaction (via OpenRouter):** Sends the generated prompt to a configured LLM (e.g., `google/gemini-2.5-pro-exp-03-25:free`) using the OpenAI SDK configured for the OpenRouter API.
@@ -19,7 +21,7 @@ This project provides a focused backend API demo showcasing the capabilities of 
 
 ## Project History & Evolution
 
-This project underwent several iterations, exploring different approaches to NOAEL prediction from SEND data:
+This project underwent several iterations, exploring different approaches to NOAEL prediction from SEND data. These are available in previous versions of this git repo:
 
 1.  **Initial TxGemma Attempt (Local Inference):** The project initially aimed to use the TxGemma model (e.g., `txgemma-2b`) directly via the Hugging Face `transformers` library. The goal was for the LLM to infer the NOAEL from a generated text summary. This faced challenges related to:
     *   The model's primary capability being text generation, not quantitative regression.
@@ -139,6 +141,14 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
     *   `llm_response` (The response received from the LLM)
     *   `error` (Details if an error occurred)
 
+## API Documentation UI (Swagger)
+
+The API includes interactive documentation provided by Swagger UI, available at the `/docs` endpoint (e.g., `http://127.0.0.1:8000/docs`) when the server is running.
+
+You can use this interface to explore the endpoints, view request/response models, and directly execute API calls:
+
+![Swagger UI Demo](images/swagger_ui_demo.png "Swagger UI showing Upload and Analyze Endpoints")
+
 ## Current Analysis Strategy (Body Weight)
 
 The current implementation in `noael_processor.py` focuses on:
@@ -149,12 +159,4 @@ The current implementation in `noael_processor.py` focuses on:
 5.  Generating a structured text prompt summarizing study metadata and these BW findings.
 6.  Sending the prompt to the configured LLM via OpenRouter.
 
-## Future Work / Improvements
-
-*   Implement analysis for other key endpoints (Lab Findings, Microscopic Pathology, Clinical Observations).
-*   Refine prompt engineering for better LLM reasoning.
-*   Add more sophisticated statistical analysis to the finding summaries.
-*   Improve error handling and reporting.
-*   Add unit and integration tests.
-*   Add docstrings to functions/modules.
 
