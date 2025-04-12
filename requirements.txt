@@ -5,12 +5,12 @@ python-multipart # Required by FastAPI for form data/file uploads
 
 # Data Handling
 pandas
-requests # Needed for send_loader to handle URLs/paths
+requests # Needed for send_loader and now Friendli API
 pyreadstat # For reading .xpt files
 
 # LLM Integration
 # google-generativeai # Removed
-openai # Using OpenAI SDK for OpenRouter
+# openai # No longer needed for OpenRouter
 python-dotenv
 
 # Utilities
