@@ -81,13 +81,13 @@ Many variables use controlled terminology (CT), which means they must use standa
 
 NOAEL (No Observed Adverse Effect Level) determination relies on the systematic analysis of toxicology study data. SEND standardization provides several advantages for NOAEL determination:
 
-1. **Consistent Data Structure**: SEND ensures that toxicology data is organized consistently across studies, making it easier to identify adverse effects and determine NOAEL values.
+1. **Consistent Data Structure**: SEND ensures that toxicology data is organized consistently across studies, making it easier to identify adverse effects and determine NOAEL values. *The current project leverages this structure by parsing specific SEND domains (like BW, CL, LB, etc.) to extract relevant findings.* 
 
-2. **Standardized Terminology**: The use of controlled terminology in SEND reduces ambiguity in the interpretation of findings, leading to more reliable NOAEL determinations.
+2. **Standardized Terminology**: The use of controlled terminology in SEND reduces ambiguity in the interpretation of findings, leading to more reliable NOAEL determinations. *This project assumes standard terminology within the processed domains.*
 
-3. **Cross-Study Analysis**: SEND's standardized format facilitates the comparison of data across multiple studies, enabling more robust NOAEL determinations based on broader evidence.
+3. **Cross-Study Analysis**: SEND's standardized format facilitates the comparison of data across multiple studies, enabling more robust NOAEL determinations based on broader evidence. *(This is a potential future application but not implemented in the current demo.)*
 
-4. **Automated Analysis**: The structured nature of SEND data makes it amenable to automated analysis, including machine learning approaches for NOAEL prediction.
+4. **Automated Analysis**: The structured nature of SEND data makes it amenable to automated analysis, including machine learning approaches for NOAEL prediction. *The current project demonstrates a specific type of automated analysis by summarizing findings and using an LLM for assessment.*
 
 5. **Comprehensive Data Capture**: SEND domains capture all relevant aspects of toxicology studies, ensuring that all data needed for NOAEL determination is available in a standardized format.
 

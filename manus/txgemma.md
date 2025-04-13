@@ -2,118 +2,56 @@
 
 ## Overview
 
-TxGemma is a collection of machine learning (ML) models developed by Google DeepMind, specifically designed for therapeutic development tasks. It is built upon Gemma 2 and fine-tuned for therapeutic applications. TxGemma comes in three sizes: 2B, 9B, and 27B parameters.
+TxGemma is a collection of machine learning (ML) models developed by Google DeepMind, specifically designed for therapeutic development tasks. It is built upon Gemma 2 and fine-tuned for therapeutic applications. TxGemma comes in different sizes (e.g., 2B, 9B, 27B parameters) and variants, including predictive (`-predict`) and conversational (`-chat`) models.
 
-## Key Capabilities Relevant to NOAEL Prediction
+## Key Capabilities
 
-### Toxicity Prediction
-TxGemma has been specifically trained to predict drug toxicity, which is directly relevant to NOAEL determination. Given a drug SMILES string (molecular representation), the model can classify whether a compound is toxic or not.
+TxGemma models are designed with several capabilities relevant to therapeutic development:
 
-### Classification Tasks
-TxGemma excels at classification tasks including:
-- Predicting drug toxicity
-- Predicting whether drugs can cross the blood-brain barrier
-- Predicting whether drugs are active against specific proteins
-- Predicting whether drugs are carcinogens
+*   **Predictive Tasks:** The `-predict` variants are trained for tasks like:
+    *   Predicting drug toxicity (e.g., based on SMILES strings).
+    *   Predicting properties like blood-brain barrier permeability, protein activity, carcinogenicity, lipophilicity, etc.
+*   **Regression Tasks:** Predicting continuous values like drug sensitivity or binding affinity.
+*   **Conversational Capabilities:** The `-chat` variants (and potentially the reasoning abilities inherent in large predict models) can:
+    *   Engage in natural language dialogue.
+    *   Explain reasoning behind predictions (if applicable).
+    *   Provide rationale for assessments based on provided information.
 
-### Regression Tasks
-TxGemma can also perform regression tasks such as:
-- Predicting lipophilicity of drugs
-- Predicting drug sensitivity levels for specific cell lines
-- Predicting binding affinity between compounds and targets
-- Predicting disease-gene associations
+## Initial Exploration and Challenges (This Project)
 
-### Conversational Capabilities
-The 9B and 27B versions offer conversational models that can:
-- Engage in natural language dialogue
-- Explain the reasoning behind predictions
-- Provide rationale for toxicology assessments
-- Support multi-turn interactions for complex queries
+*   **Initial Goal:** This project initially explored using the `txgemma-*-predict` models for *direct* numerical NOAEL prediction based on textual summaries of SEND data.
+*   **Challenges Encountered:** As detailed in `manus/Notes.md`, this approach faced significant challenges related to:
+    *   Task mismatch (using a text-focused model for quantitative regression).
+    *   Inconsistent and unparsable numerical output.
+    *   Difficulty representing complex SEND data relationships in a purely textual format suitable for direct regression by the LLM.
 
-## Technical Advantages for NOAEL Prediction
+## Final Implementation Approach (This Project)
 
-1. **Pre-trained Foundation**: TxGemma provides a pre-trained foundation that can be fine-tuned for specialized use cases like NOAEL prediction, requiring less data and compute than training from scratch.
+*   **Pivot to LLM Reasoning:** Due to the challenges with direct prediction, the final implementation pivoted to leveraging the *reasoning* capabilities of a large language model.
+*   **External Hosting:** The demo uses a TxGemma model (specifically, a `predict` variant capable of chat-like interaction in this context) hosted externally via the Friendli.ai platform.
+*   **Focus on Summarized Data:** Instead of direct prediction, the workflow involves:
+    1.  Parsing structured SEND data (`.xpt` files).
+    2.  Generating a comprehensive textual summary of findings across multiple relevant domains (BW, CL, LB, MA, MI, OM).
+    3.  Sending this summary along with study metadata to the hosted TxGemma model via an API call.
+    4.  Prompting the model to *assess* toxicology findings, NOAEL characteristics, and data limitations based on the provided summary.
+*   **Goal:** The aim shifted from asking the LLM to *calculate* the NOAEL to asking it to *reason about the data relevant to NOAEL assessment* and provide a toxicological interpretation of the summary.
 
-2. **Data Efficiency**: Shows competitive performance even with limited data compared to larger models, which is valuable for toxicology datasets that may be limited in size.
+## Relevance to SEND Datasets and NOAEL Assessment (Implemented Approach)
 
-3. **Versatility**: Exhibits strong performance across a wide range of therapeutic tasks, outperforming or matching best-in-class performance on many benchmarks.
+In the context of the *final implemented demo*: 
 
-4. **Integration Potential**: Can be used as a tool within an agentic system, allowing it to be combined with other tools for comprehensive toxicology assessment.
+1.  **Structured Data Summarization**: The process relies on summarizing structured SEND data into a format digestible by the LLM.
+2.  **Multi-endpoint Reasoning**: The LLM receives summaries from multiple endpoints (BW, LB, etc.) and can reason across them.
+3.  **Identification of Limitations**: The LLM is explicitly asked to identify limitations in the provided summary data for making a definitive NOAEL determination.
+4.  **Explainability**: The LLM's textual response provides a natural language explanation of its assessment based *only* on the provided summary.
 
-## Implementation Approach
+## Technical Considerations (Implemented Approach)
 
-### Model Access
-TxGemma models are available through:
-- Google Cloud Model Garden
-- Hugging Face Hub (repositories: google/txgemma-27b-predict, google/txgemma-27b-chat, etc.)
-- GitHub repository with supporting code and notebooks
+*   **API Integration:** The implementation relies on standard HTTP requests (`requests` library) to interact with the Friendli API hosting the TxGemma model.
+*   **Prompt Engineering:** The quality of the LLM's assessment depends heavily on the clarity and structure of the generated prompt, which includes both study metadata and the comprehensive findings summary.
+*   **Summarization Logic:** The quality of the input summary (generated by `noael_processor.py`) is crucial. The current summaries are basic and could be enhanced for more detail.
+*   **Computational Requirements:** Using an external API removes the need for local high-end GPU resources for inference.
 
-### Prompt Formatting
-TxGemma requires specific prompt formatting for therapeutic tasks:
-```python
-# Example for toxicity prediction
-import json
-from huggingface_hub import hf_hub_download
+## Conclusion (Regarding This Demo Project)
 
-# Load prompt template for tasks from TDC
-tdc_prompts_filepath = hf_hub_download(
-    repo_id="google/txgemma-27b-predict",
-    filename="tdc_prompts.json",
-)
-with open(tdc_prompts_filepath, "r") as f:
-    tdc_prompts_json = json.load(f)
-
-# Set example TDC task and input
-task_name = "Tox21_SR_p53"  # Example toxicity dataset
-input_type = "{Drug SMILES}"
-drug_smiles = "CN1C(=O)CN=C(C2=CCCCC2)c2cc(Cl)ccc21"  # Example molecule
-
-# Construct prompt using template and input drug SMILES string
-TDC_PROMPT = tdc_prompts_json[task_name].replace(input_type, drug_smiles)
-```
-
-### Model Inference
-Running inference with TxGemma can be done using the Transformers library:
-```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-
-# Load model directly from Hugging Face Hub
-tokenizer = AutoTokenizer.from_pretrained("google/txgemma-27b-predict")
-model = AutoModelForCausalLM.from_pretrained(
-    "google/txgemma-27b-predict",
-    device_map="auto",
-)
-
-# Generate response
-input_ids = tokenizer(TDC_PROMPT, return_tensors="pt").to("cuda")
-outputs = model.generate(**input_ids, max_new_tokens=8)
-prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
-```
-
-## Relevance to SEND Datasets and NOAEL Prediction
-
-TxGemma's capabilities align well with the requirements for NOAEL prediction from SEND datasets:
-
-1. **Structured Data Processing**: TxGemma can be adapted to process structured data from SEND domains relevant to toxicology assessment.
-
-2. **Multi-endpoint Analysis**: The model can potentially analyze multiple toxicology endpoints simultaneously, which is essential for comprehensive NOAEL determination.
-
-3. **Dose-Response Relationships**: With fine-tuning, TxGemma could learn to identify dose-response relationships critical for NOAEL identification.
-
-4. **Explainability**: The conversational variants provide explanations for predictions, which is valuable for regulatory contexts where understanding the basis of NOAEL determinations is important.
-
-5. **Integration with SEND Format**: TxGemma can be trained to understand the standardized structure of SEND datasets, leveraging the consistency of this format for improved predictions.
-
-## Limitations and Considerations
-
-1. **Domain-Specific Fine-tuning**: While TxGemma is pre-trained on therapeutic data, specific fine-tuning on SEND datasets would be necessary for optimal NOAEL prediction.
-
-2. **Data Format Conversion**: SEND datasets would need to be appropriately formatted to match TxGemma's input requirements.
-
-3. **Computational Requirements**: The larger models (9B and 27B) require significant GPU resources for inference and fine-tuning.
-
-4. **Validation Requirements**: Regulatory acceptance would require extensive validation of model predictions against expert-determined NOAEL values.
-
-## Conclusion
-
-TxGemma offers significant potential for NOAEL prediction from SEND datasets due to its pre-training on therapeutic data, toxicity prediction capabilities, and flexible architecture. Its ability to process molecular information and predict various toxicological endpoints makes it a promising foundation for developing a specialized NOAEL prediction system. The conversational capabilities of the larger models also provide valuable explainability features that could help interpret and justify NOAEL determinations.
+While TxGemma models offer potential for various toxicology predictions, this specific demo project highlights their utility as **reasoning engines** when applied to summarized nonclinical data. The final approach leverages a hosted TxGemma model via Friendli API to interpret a generated summary of SEND findings, providing a toxicological assessment and discussing NOAEL-relevant characteristics and limitations based *solely* on that input. This demonstrates how LLMs can assist in the interpretation phase, even when direct quantitative prediction from text proves challenging.
