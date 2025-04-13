@@ -219,7 +219,7 @@ Screenshot illustrating model card on Hugging Face:
 ![Hugging Face](images/huggingface.png)
 
 Screenshot illustrating model running on Friendli service:
-![Hugging Face](images/friendli.png)
+![Hugging Face](images/friendli.png))
 
 ## Project History & Evolution
 
