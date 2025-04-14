@@ -171,15 +171,15 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
             
     - **llm_response**: (Excerpt)
 
-    ## Analysis of Preclinical Toxicology Study Data for Drug-X
+        ## Analysis of Preclinical Toxicology Study Data for Drug-X
 
-    **1. Key Toxicological Findings:**
+        **1. Key Toxicological Findings:**
 
-    * **Body Weight Change:** The two control groups (0.00 mg and 20.00 mg) show comparable mean terminal body weight (BW) changes (1.60% and -3.05% respectively), suggesting no significant impact of vehicle or low doses of Drug-X on BW. The 50.00 mg group exhibits a negligible BW change (0.00%), while the highest dose (150.00 mg) reveals a significant positive change of 6.13%. This suggests potential dose-dependent effects of Drug-X on BW, with the highest dose exhibiting a notable increase.
+        * **Body Weight Change:** The two control groups (0.00 mg and 20.00 mg) show comparable mean terminal body weight (BW) changes (1.60% and -3.05% respectively), suggesting no significant impact of vehicle or low doses of Drug-X on BW. The 50.00 mg group exhibits a negligible BW change (0.00%), while the highest dose (150.00 mg) reveals a significant positive change of 6.13%. This suggests potential dose-dependent effects of Drug-X on BW, with the highest dose exhibiting a notable increase.
 
-    **2. Overall Toxicological Assessment:**
+        **2. Overall Toxicological Assessment:**
 
-    Based on the limited available data, the 50.00 mg dose of Drug-X appears to be the most plausible candidate for the NOAEL. This dose shows no statistically significant difference in BW change compared to the control group, while higher doses exhibit statistically significant deviations. However, a definitive conclusion cannot be drawn without additional data and statistical analysis.
+        Based on the limited available data, the 50.00 mg dose of Drug-X appears to be the most plausible candidate for the NOAEL. This dose shows no statistically significant difference in BW change compared to the control group, while higher doses exhibit statistically significant deviations. However, a definitive conclusion cannot be drawn without additional data and statistical analysis.
             
     - **error**: `null`
 
@@ -240,7 +240,7 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
     **4. NOAEL Determination:**
     Based on the available data, the **NOAEL is 10.0 mg/kg**. This dose group exhibited no statistically significant body weight loss compared to the control group.
             
-    - **error**: `null`
+- **error**: `null`
 </details>
 
 ## Key differences between Basic and Enhanced analysis:
