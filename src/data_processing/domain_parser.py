@@ -2,7 +2,9 @@ import pandas as pd
 from typing import Dict, Optional, Any
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def parse_demographics(dm_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
@@ -16,43 +18,52 @@ def parse_demographics(dm_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
         return None
 
     # Define columns considered essential for basic identification and grouping
-    essential_cols = ['USUBJID', 'ARMCD', 'SEX']
+    essential_cols = ["USUBJID", "ARMCD", "SEX"]
     # Define columns that are good to have but might be missing
-    optional_cols = ['ARM', 'ACTARM', 'SETCD'] 
-    
+    optional_cols = ["ARM", "ACTARM", "SETCD"]
+
     present_essential = [col for col in essential_cols if col in dm_df.columns]
     present_optional = [col for col in optional_cols if col in dm_df.columns]
 
     # Must have USUBJID at a minimum
-    if 'USUBJID' not in present_essential:
-        logging.error("DM domain missing critical USUBJID column. Cannot parse demographics.")
+    if "USUBJID" not in present_essential:
+        logging.error(
+            "DM domain missing critical USUBJID column. Cannot parse demographics."
+        )
         return None
-        
+
     # Check if other essential columns are missing for grouping
     missing_essential = [col for col in essential_cols if col not in present_essential]
     if missing_essential:
-         logging.warning(f"DM domain missing essential columns needed for some analyses: {missing_essential}. Proceeding with available data.")
+        logging.warning(
+            f"DM domain missing essential columns needed for some analyses: {missing_essential}. Proceeding with available data."
+        )
 
     # Check for missing optional columns (previously required)
     missing_optional = [col for col in optional_cols if col not in present_optional]
     if missing_optional:
-        logging.warning(f"DM domain missing optional columns: {missing_optional}. Parsing accuracy for some fields may be affected.")
+        logging.warning(
+            f"DM domain missing optional columns: {missing_optional}. Parsing accuracy for some fields may be affected."
+        )
 
     # Select all available essential and optional columns
     cols_to_keep = present_essential + present_optional
     if not cols_to_keep:
-         # Should not happen due to USUBJID check, but as safety
-         return None 
+        # Should not happen due to USUBJID check, but as safety
+        return None
 
     # Select relevant columns and remove duplicates (one row per subject)
     # Use USUBJID and SETCD (if available) for uniqueness check
-    unique_subset = ['USUBJID']
-    if 'SETCD' in cols_to_keep:
-         unique_subset.append('SETCD')
-         
+    unique_subset = ["USUBJID"]
+    if "SETCD" in cols_to_keep:
+        unique_subset.append("SETCD")
+
     demographics = dm_df[cols_to_keep].drop_duplicates(subset=unique_subset)
-    logging.info(f"Parsed DM domain for {demographics.shape[0]} unique subjects (using {unique_subset} for uniqueness).")
+    logging.info(
+        f"Parsed DM domain for {demographics.shape[0]} unique subjects (using {unique_subset} for uniqueness)."
+    )
     return demographics
+
 
 def parse_exposure(ex_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     """Parses the Exposure (EX) domain.
@@ -65,27 +76,34 @@ def parse_exposure(ex_df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
         return None
 
     # Core columns needed for dose information
-    required_cols = ['USUBJID', 'EXDOSE', 'EXDOSU', 'EXTRT', 'EXROUTE']
+    required_cols = ["USUBJID", "EXDOSE", "EXDOSU", "EXTRT", "EXROUTE"]
     # Optional but useful time columns
-    optional_cols = ['EXSTDY', 'EXENDY'] # Start/End Day
+    optional_cols = ["EXSTDY", "EXENDY"]  # Start/End Day
     available_cols = [col for col in required_cols if col in ex_df.columns]
     available_cols.extend([col for col in optional_cols if col in ex_df.columns])
 
-    if 'USUBJID' not in available_cols or 'EXDOSE' not in available_cols:
-        logging.warning("EX domain missing essential columns (USUBJID, EXDOSE). Cannot parse exposure.")
+    if "USUBJID" not in available_cols or "EXDOSE" not in available_cols:
+        logging.warning(
+            "EX domain missing essential columns (USUBJID, EXDOSE). Cannot parse exposure."
+        )
         return None
 
     exposure = ex_df[available_cols].copy()
     # Potential cleaning: Convert EXDOSE to numeric if not already
-    if 'EXDOSE' in exposure.columns:
-        exposure['EXDOSE'] = pd.to_numeric(exposure['EXDOSE'], errors='coerce')
+    if "EXDOSE" in exposure.columns:
+        exposure["EXDOSE"] = pd.to_numeric(exposure["EXDOSE"], errors="coerce")
         # Log how many rows failed conversion
-        failed_conversions = exposure['EXDOSE'].isna().sum() - ex_df['EXDOSE'].isna().sum()
+        failed_conversions = (
+            exposure["EXDOSE"].isna().sum() - ex_df["EXDOSE"].isna().sum()
+        )
         if failed_conversions > 0:
-             logging.warning(f"Could not convert {failed_conversions} EXDOSE values to numeric.")
+            logging.warning(
+                f"Could not convert {failed_conversions} EXDOSE values to numeric."
+            )
 
     logging.info(f"Parsed EX domain with {exposure.shape[0]} records.")
     return exposure
+
 
 def parse_trial_summary(ts_df: Optional[pd.DataFrame]) -> Dict[str, Any]:
     """Parses the Trial Summary (TS) domain.
@@ -98,19 +116,26 @@ def parse_trial_summary(ts_df: Optional[pd.DataFrame]) -> Dict[str, Any]:
         logging.warning("TS domain is missing or empty, cannot parse trial summary.")
         return trial_summary
 
-    if not all(col in ts_df.columns for col in ['TSPARMCD', 'TSVAL']):
-        logging.warning("TS domain missing TSPARMCD or TSVAL columns. Cannot parse trial summary.")
+    if not all(col in ts_df.columns for col in ["TSPARMCD", "TSVAL"]):
+        logging.warning(
+            "TS domain missing TSPARMCD or TSVAL columns. Cannot parse trial summary."
+        )
         return trial_summary
 
     # Create a dictionary from parameter codes and values
     # Handle potential duplicate TSPARMCDs (e.g., multiple PCLAS values) by taking the first one
-    ts_df_unique = ts_df.drop_duplicates(subset=['TSPARMCD'], keep='first')
-    trial_summary = pd.Series(ts_df_unique.TSVAL.values, index=ts_df_unique.TSPARMCD).to_dict()
+    ts_df_unique = ts_df.drop_duplicates(subset=["TSPARMCD"], keep="first")
+    trial_summary = pd.Series(
+        ts_df_unique.TSVAL.values, index=ts_df_unique.TSPARMCD
+    ).to_dict()
 
     logging.info(f"Parsed TS domain, extracted {len(trial_summary)} parameters.")
     return trial_summary
 
-def parse_findings_domain(domain_df: Optional[pd.DataFrame], domain_name: str) -> Optional[pd.DataFrame]:
+
+def parse_findings_domain(
+    domain_df: Optional[pd.DataFrame], domain_name: str
+) -> Optional[pd.DataFrame]:
     """Basic parser for findings domains (e.g., LB, CL, BW, PC, MI).
 
     Extracts common columns like USUBJID, --TESTCD, --STRESN/--STRESC, --DY.
@@ -123,21 +148,21 @@ def parse_findings_domain(domain_df: Optional[pd.DataFrame], domain_name: str) -
         return None
 
     domain_prefix = domain_name.upper()
-    testcd_col = f'{domain_prefix}TESTCD'
-    test_col = f'{domain_prefix}TEST'
-    stresn_col = f'{domain_prefix}STRESN' # Numeric result
-    stresc_col = f'{domain_prefix}STRESC' # Character result
-    stresu_col = f'{domain_prefix}STRESU' # Units
-    dy_col = f'{domain_prefix}DY'         # Study Day
+    testcd_col = f"{domain_prefix}TESTCD"
+    test_col = f"{domain_prefix}TEST"
+    stresn_col = f"{domain_prefix}STRESN"  # Numeric result
+    stresc_col = f"{domain_prefix}STRESC"  # Character result
+    stresu_col = f"{domain_prefix}STRESU"  # Units
+    dy_col = f"{domain_prefix}DY"  # Study Day
 
-    required_cols = ['USUBJID']
+    required_cols = ["USUBJID"]
     result_cols = []
     present_cols = []
 
     if testcd_col in domain_df.columns:
         required_cols.append(testcd_col)
     if test_col in domain_df.columns:
-         required_cols.append(test_col)
+        required_cols.append(test_col)
 
     # Check for result columns
     if stresn_col in domain_df.columns:
@@ -145,9 +170,11 @@ def parse_findings_domain(domain_df: Optional[pd.DataFrame], domain_name: str) -
     if stresc_col in domain_df.columns:
         result_cols.append(stresc_col)
     if not result_cols:
-         logging.warning(f"{domain_prefix} domain missing result columns ({stresn_col}, {stresc_col}).")
-         # Cannot proceed without results
-         return None
+        logging.warning(
+            f"{domain_prefix} domain missing result columns ({stresn_col}, {stresc_col})."
+        )
+        # Cannot proceed without results
+        return None
 
     # Add other common columns if present
     if stresu_col in domain_df.columns:
@@ -160,11 +187,11 @@ def parse_findings_domain(domain_df: Optional[pd.DataFrame], domain_name: str) -
 
     # Attempt to convert numeric result column
     if stresn_col in findings.columns:
-        findings[stresn_col] = pd.to_numeric(findings[stresn_col], errors='coerce')
+        findings[stresn_col] = pd.to_numeric(findings[stresn_col], errors="coerce")
 
     # Attempt to convert day column
     if dy_col in findings.columns:
-        findings[dy_col] = pd.to_numeric(findings[dy_col], errors='coerce')
+        findings[dy_col] = pd.to_numeric(findings[dy_col], errors="coerce")
 
     logging.info(f"Parsed {domain_prefix} domain with {findings.shape[0]} records.")
     return findings
@@ -186,26 +213,38 @@ def parse_domains(study_data: Dict[str, Optional[pd.DataFrame]]) -> Dict[str, An
     logging.info("Starting domain parsing...")
 
     # Parse core domains
-    dm_parsed = parse_demographics(study_data.get('dm'))
-    if dm_parsed is not None: parsed_data['dm'] = dm_parsed
-    
-    ex_parsed = parse_exposure(study_data.get('ex'))
-    if ex_parsed is not None: parsed_data['ex'] = ex_parsed
-    
+    dm_parsed = parse_demographics(study_data.get("dm"))
+    if dm_parsed is not None:
+        parsed_data["dm"] = dm_parsed
+
+    ex_parsed = parse_exposure(study_data.get("ex"))
+    if ex_parsed is not None:
+        parsed_data["ex"] = ex_parsed
+
     # Trial summary is already a dict, add directly if not empty
-    ts_parsed = parse_trial_summary(study_data.get('ts'))
-    if ts_parsed: parsed_data['ts'] = ts_parsed 
+    ts_parsed = parse_trial_summary(study_data.get("ts"))
+    if ts_parsed:
+        parsed_data["ts"] = ts_parsed
 
     # Parse common findings domains
-    findings_domains = ['lb', 'cl', 'bw', 'pc', 'pp', 'mi', 'om'] # Add other relevant findings domains here
+    findings_domains = [
+        "lb",
+        "cl",
+        "bw",
+        "pc",
+        "pp",
+        "mi",
+        "om",
+    ]  # Add other relevant findings domains here
     for domain in findings_domains:
         if domain in study_data:
             parsed_df = parse_findings_domain(study_data[domain], domain)
             if parsed_df is not None:
-                 parsed_data[domain] = parsed_df # Add directly with domain key
+                parsed_data[domain] = parsed_df  # Add directly with domain key
 
     logging.info("Finished domain parsing.")
     return parsed_data
+
 
 # Example Usage (Optional - for testing)
 # if __name__ == '__main__':
@@ -238,4 +277,4 @@ def parse_domains(study_data: Dict[str, Optional[pd.DataFrame]]) -> Dict[str, An
 #         if 'lb' in parsed_results:
 #             print(parsed_results['lb'].head())
 #         else:
-#             print("LB domain not available or failed parsing") 
+#             print("LB domain not available or failed parsing")
