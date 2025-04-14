@@ -11,7 +11,7 @@ This is a sample project for demonstrating how to use it for predicting toxicity
 Swagger UI showing Upload and Analyze Endpoints:
 ![Swagger UI](images/swagger_ui_demo.png)
 
-### Current Analysis Strategy (Body Weight)
+### Current Analysis Strategy
 
 The current implementation in `noael_processor.py` focuses on:
 1.  Loading DM, EX, TS, BW domains.
@@ -22,9 +22,11 @@ The current implementation in `noael_processor.py` focuses on:
 6.  Sending the prompt to the configured LLM via Friendli API.
 
 
-**Goal:** Demonstrate how an LLM can process summarized findings from a SEND study (currently focusing on Body Weight changes) and provide both a potential NOAEL assessment and the reasoning behind it, aligning with the goal of explainable AI in therapeutic development. The previous versions and sample python files in the manus folder should give you more representative examples on other predictions to try out.
+**Goal:** Demonstrate how an LLM can process summarized findings from a SEND study (currently focusing on Body Weight changes for the analyze_noael endpoint) and provide both a potential NOAEL assessment and the reasoning behind it, aligning with the goal of explainable AI in therapeutic development. The previous versions and sample python files in the manus folder should give you more representative examples on other predictions to try out. 
 
-**Note:** This repository represents the final state of a project that evolved significantly. See the "Project History" section below for details on previous approaches involving direct TxGemma inference and traditional Machine Learning models.
+The project now also exposes a new endpoint called /analyze_enhanced, which attempts at extracting maximum possible information about toxicology froom the SEND datasets by analyzing all domains it contains and predicting possible information from all available data.
+
+**Note:** This project set out as a means to evaluate AI coding tools, to solve a real business problem. It used RooCode, Cursor, and Cline-Code. See the "Project History" section below for details on previous approaches involving direct TxGemma inference and traditional Machine Learning models.
 
 ## Features
 
