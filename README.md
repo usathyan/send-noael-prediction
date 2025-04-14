@@ -139,9 +139,7 @@ API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
     *   `llm_response` (The response received from the LLM)
     *   `error` (Details if an error occurred)
 
-4. **Example Response: Basic NOAEL Analysis**
-
-
+## Sample Responses
 <details>
 <summary>Example Response Details (`/analyze_noael`)</summary>
 
